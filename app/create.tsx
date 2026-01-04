@@ -1,0 +1,202 @@
+import { useState } from 'react';
+import { View, Text, TextInput, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { ChallengeRepository } from '../src/data/repositories/ChallengeRepository';
+import { Button } from '../src/ui/components/Button';
+import { Card } from '../src/ui/components/Card';
+import { colors } from '../src/ui/theme/colors';
+import { spacing, layout } from '../src/ui/theme/spacing';
+import { typography } from '../src/ui/theme/typography';
+
+export default function CreateChallengeScreen() {
+    const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [points, setPoints] = useState('');
+
+    const [loading, setLoading] = useState(false);
+    const handleCreate = async () => {
+        if (!title) {
+            Alert.alert('Error', 'Title is required');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const newChallenge = {
+                title,
+                description,
+                points: parseInt(points) || 0,
+            };
+
+            await ChallengeRepository.create(newChallenge);
+            router.back();
+        } catch (e: any) {
+            Alert.alert('Error', e.message || 'Failed to create challenge');
+            setLoading(false);
+        }
+    };
+
+    const handleBack = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.back();
+    };
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <ScrollView contentContainerStyle={styles.scrollContent}>
+                    <View style={[styles.header, { marginTop: Math.max(insets.top, 20) }]}>
+                        <View style={styles.headerTop}>
+                            <TouchableOpacity
+                                onPress={handleBack}
+                                style={styles.backButtonCircle}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+                            </TouchableOpacity>
+                            <Text style={styles.headerTitle}>New Challenge</Text>
+                            <View style={{ width: 44 }} />
+                        </View>
+                        <Text style={styles.headerSubtitle}>Set a goal and track your progress</Text>
+                    </View>
+
+                    <Card style={styles.formCard}>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Title</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={title}
+                                onChangeText={setTitle}
+                                placeholder="e.g., Drink Water"
+                                placeholderTextColor={colors.text.tertiary}
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Description (Optional)</Text>
+                            <TextInput
+                                style={[styles.input, styles.textArea]}
+                                value={description}
+                                onChangeText={setDescription}
+                                placeholder="e.g., 2 Liters a day"
+                                placeholderTextColor={colors.text.tertiary}
+                                multiline
+                                numberOfLines={3}
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Points Reward</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={points}
+                                onChangeText={setPoints}
+                                placeholder="e.g., 10"
+                                placeholderTextColor={colors.text.tertiary}
+                                keyboardType="numeric"
+                            />
+                            <Text style={styles.helperText}>Points earned for each completion</Text>
+                        </View>
+
+                        <View style={styles.buttonGroup}>
+                            <Button
+                                title={loading ? "Creating..." : "Create Challenge"}
+                                onPress={handleCreate}
+                                disabled={loading}
+                                size="large"
+                                style={styles.createButton}
+                            />
+                            <Button
+                                title="Cancel"
+                                variant="ghost"
+                                onPress={() => router.back()}
+                                disabled={loading}
+                            />
+                        </View>
+                    </Card>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    scrollContent: {
+        padding: spacing.m,
+    },
+    header: {
+        marginBottom: spacing.l,
+    },
+    headerTop: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    backButtonCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.surface,
+    },
+    headerTitle: {
+        ...typography.h1,
+        color: colors.text.primary,
+        textAlign: 'center',
+    },
+    headerSubtitle: {
+        ...typography.body,
+        color: colors.text.secondary,
+        textAlign: 'center',
+        marginTop: spacing.xs,
+    },
+    formCard: {
+        padding: spacing.l,
+    },
+    inputGroup: {
+        marginBottom: spacing.l,
+    },
+    label: {
+        ...typography.body,
+        fontWeight: '600',
+        color: colors.text.primary,
+        marginBottom: spacing.s,
+    },
+    input: {
+        backgroundColor: colors.background,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.m,
+        borderRadius: layout.borderRadius.m,
+        fontSize: 16,
+        color: colors.text.primary,
+    },
+    textArea: {
+        height: 100,
+        textAlignVertical: 'top',
+    },
+    helperText: {
+        ...typography.caption,
+        color: colors.text.tertiary,
+        marginTop: spacing.xs,
+    },
+    buttonGroup: {
+        marginTop: spacing.s,
+    },
+    createButton: {
+        marginBottom: spacing.m,
+    },
+});

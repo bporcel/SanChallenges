@@ -1,0 +1,206 @@
+{
+  "challenges": [
+    {
+      "id": "39b15966-5e0e-433c-bf8b-cd52d56790fc",
+      "title": "Test Challenge",
+      "description": "",
+      "points": 10,
+      "inviteCode": "6E1EE1",
+      "createdAt": 1767531190449
+    },
+    {
+      "id": "7f432311-e239-4306-a5c0-38a5aa8aeea6",
+      "title": "Test",
+      "description": "Eueue",
+      "points": 58,
+      "inviteCode": "C36620",
+      "createdAt": 1767531318583
+    },
+    {
+      "id": "f618c50e-b4d6-41df-83b9-0a5244d8af9d",
+      "title": "Drink water",
+      "description": "2L",
+      "points": 40,
+      "inviteCode": "131642",
+      "createdAt": 1767532301454
+    },
+    {
+      "id": "346f64d2-b2cd-4b7a-a3a1-728388a5464d",
+      "title": "Dominadas",
+      "description": "5",
+      "points": 10,
+      "inviteCode": "772D8D",
+      "createdAt": 1767532340153
+    },
+    {
+      "id": "a3dda2e3-3bb8-4a32-82f0-a3ac4bdd7b91",
+      "title": "Zjdjs",
+      "description": "Svshs",
+      "points": 45,
+      "inviteCode": "FA88D8",
+      "createdAt": 1767532986465
+    },
+    {
+      "id": "de55be72-27a1-467b-8ae6-ca4dad200dca",
+      "title": "Hsbxhxyd",
+      "description": "Hshs",
+      "points": 948,
+      "inviteCode": "BD07B4",
+      "createdAt": 1767532994063
+    },
+    {
+      "id": "71d2e8e9-9c4f-443e-968f-93b767f369b7",
+      "title": "Yshs",
+      "description": "Shsh",
+      "points": 49,
+      "inviteCode": "CA1552",
+      "createdAt": 1767533001964
+    },
+    {
+      "id": "6ff63a5e-8e47-440e-a5c7-5573f7d49321",
+      "title": "Hshs",
+      "description": "Shs",
+      "points": 46,
+      "inviteCode": "EC256F",
+      "createdAt": 1767533049367
+    }
+  ],
+  "participants": [
+    {
+      "userId": "user1",
+      "challengeId": "39b15966-5e0e-433c-bf8b-cd52d56790fc",
+      "joinedAt": 1767531190450
+    },
+    {
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "7f432311-e239-4306-a5c0-38a5aa8aeea6",
+      "joinedAt": 1767531318583
+    },
+    {
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "f618c50e-b4d6-41df-83b9-0a5244d8af9d",
+      "joinedAt": 1767532301454
+    },
+    {
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "346f64d2-b2cd-4b7a-a3a1-728388a5464d",
+      "joinedAt": 1767532340153
+    },
+    {
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "a3dda2e3-3bb8-4a32-82f0-a3ac4bdd7b91",
+      "joinedAt": 1767532986465
+    },
+    {
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "de55be72-27a1-467b-8ae6-ca4dad200dca",
+      "joinedAt": 1767532994063
+    },
+    {
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "71d2e8e9-9c4f-443e-968f-93b767f369b7",
+      "joinedAt": 1767533001964
+    },
+    {
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "6ff63a5e-8e47-440e-a5c7-5573f7d49321",
+      "joinedAt": 1767533049367
+    }
+  ],
+  "checks": [
+    {
+      "id": "1c759644-3b4f-437e-959a-aa6d39619d52",
+      "userId": "user1",
+      "challengeId": "39b15966-5e0e-433c-bf8b-cd52d56790fc",
+      "date": "2023-01-01",
+      "completed": true
+    },
+    {
+      "id": "6705897e-960e-47cd-bca2-6f949691d116",
+      "userId": "user2",
+      "challengeId": "39b15966-5e0e-433c-bf8b-cd52d56790fc",
+      "date": "2023-01-01",
+      "completed": true
+    },
+    {
+      "id": "52fyv5c4n",
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "7f432311-e239-4306-a5c0-38a5aa8aeea6",
+      "date": "2026-01-05",
+      "completed": true
+    },
+    {
+      "id": "jmw2m972q",
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "f618c50e-b4d6-41df-83b9-0a5244d8af9d",
+      "date": "2026-01-05",
+      "completed": true
+    },
+    {
+      "id": "pnazpovea",
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "346f64d2-b2cd-4b7a-a3a1-728388a5464d",
+      "date": "2026-01-05",
+      "completed": true
+    },
+    {
+      "id": "3qzazjvhe",
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "f618c50e-b4d6-41df-83b9-0a5244d8af9d",
+      "date": "2026-01-06",
+      "completed": true
+    },
+    {
+      "id": "ryu204vaa",
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "f618c50e-b4d6-41df-83b9-0a5244d8af9d",
+      "date": "2026-01-04",
+      "completed": true
+    },
+    {
+      "id": "4kq9edyyh",
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "346f64d2-b2cd-4b7a-a3a1-728388a5464d",
+      "date": "2026-01-04",
+      "completed": true
+    },
+    {
+      "id": "zg7y40eme",
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "346f64d2-b2cd-4b7a-a3a1-728388a5464d",
+      "date": "2026-01-06",
+      "completed": true
+    },
+    {
+      "id": "aoiodb84h",
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "346f64d2-b2cd-4b7a-a3a1-728388a5464d",
+      "date": "2026-01-07",
+      "completed": true
+    },
+    {
+      "id": "k2vgu6dhw",
+      "userId": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "challengeId": "f618c50e-b4d6-41df-83b9-0a5244d8af9d",
+      "date": "2026-01-07",
+      "completed": true
+    }
+  ],
+  "users": [
+    {
+      "id": "user1",
+      "displayName": "Alice",
+      "updatedAt": 1767531190463
+    },
+    {
+      "id": "user2",
+      "displayName": "Bob",
+      "updatedAt": 1767531190466
+    },
+    {
+      "id": "46c5feee-38e8-4c7f-b582-c30ae8ac8e46",
+      "displayName": "Tofol",
+      "updatedAt": 1767532381102
+    }
+  ]
+}
