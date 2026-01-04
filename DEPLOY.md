@@ -6,15 +6,16 @@ This guide outlines the strategy and steps to deploy the SanChallenges applicati
 
 We will use a "Best of Breed" free tier strategy:
 - **Database**: **Neon** (Serverless Postgres) - Generous free tier, easy to use.
-- **Backend**: **Render** (Web Service) - Free tier for Node.js apps.
-- **Frontend**: **Vercel** (Static/SPA) - Excellent free tier for Expo Web.
+- **Backend**: **Render** (Docker) - Free tier for Dockerized apps.
+- **Frontend/Mobile**: **Expo EAS** (Build & Update) - Free tier for building and updating mobile apps.
 
 ## Prerequisites
 
 1.  **GitHub Account**: Your code must be pushed to a GitHub repository.
 2.  **Neon Account**: [Sign up here](https://neon.tech/)
 3.  **Render Account**: [Sign up here](https://render.com/)
-4.  **Vercel Account**: [Sign up here](https://vercel.com/)
+4.  **Expo Account**: [Sign up here](https://expo.dev/)
+5.  **EAS CLI**: Install globally: `npm install -g eas-cli`
 
 ---
 
@@ -57,38 +58,43 @@ We will use a "Best of Breed" free tier strategy:
     - The container will start, run `npx prisma db push` to sync your database schema, and then start the server.
 8.  **Copy the Backend URL**:
     - Once deployed, you will see a URL like `https://sanchallenges-api.onrender.com`.
-    - **Save this**, you will need it for the Frontend deployment.
+    - **Save this**, you will need it for the Mobile App configuration.
 
 ---
 
-## Step 3: Deploy Frontend (Vercel)
+## Step 3: Deploy Mobile App (EAS)
 
-1.  Log in to **Vercel Dashboard**.
-2.  Click **"Add New..."** -> **"Project"**.
-3.  Import your **GitHub repository**.
-4.  **Configure Project**:
-    - **Framework Preset**: Vercel should automatically detect **Expo**. If not, select "Other" or "Create React App" but Expo is best.
-    - **Root Directory**: `.`
-    - **Build Command**: `npx expo export -p web` (Vercel might default to `expo export`, ensure `-p web` is used if needed, or just `npx expo export`).
-        - *Correction*: The default `expo export` is usually fine for Expo Router.
-    - **Output Directory**: `dist`
-5.  **Environment Variables**:
-    - Expand "Environment Variables".
-    - Add Key: `EXPO_PUBLIC_API_URL`
-    - Add Value: Paste the **Render Backend URL** from Step 2 (e.g., `https://sanchallenges-api.onrender.com`).
-        - *Important*: Ensure no trailing slash `/` unless your code expects it (usually better without).
-6.  Click **"Deploy"**.
-7.  Wait for the build to complete.
-8.  **Done!** Your app is now live.
+1.  **Configure Environment**:
+    - Open `eas.json` in your project.
+    - Under `build.production.env`, update `EXPO_PUBLIC_API_URL` with your **Render Backend URL** from Step 2.
+    - *Example*:
+      ```json
+      "production": {
+        "env": {
+          "EXPO_PUBLIC_API_URL": "https://sanchallenges-api.onrender.com"
+        }
+      }
+      ```
+
+2.  **Login to EAS**:
+    - Run `eas login` in your terminal and log in with your Expo account.
+
+3.  **Build for Android**:
+    - Run `eas build --profile production --platform android`.
+    - Follow the prompts (you might need to generate a keystore, just say "yes" to let EAS handle it).
+    - Wait for the build to finish (this happens in the cloud).
+
+4.  **Download & Install**:
+    - Once finished, EAS will provide a link to download the `.apk` (or `.aab` for Play Store).
+    - Install it on your device to test.
 
 ## Verification
 
-1.  Open your Vercel URL.
-2.  Try to log in or view challenges.
-3.  If data loads, the Frontend -> Backend -> Database connection is working!
+1.  Open the installed app on your phone.
+2.  Try to create a user or challenge.
+3.  If it works, the Mobile App -> Backend -> Database connection is successful!
 
 ## Troubleshooting
 
--   **CORS Issues**: If the frontend cannot talk to the backend, check the backend logs. You might need to configure CORS in `server/index.js` to allow the Vercel domain.
-    -   *Quick Fix*: Allow all origins `*` in `cors()` options during initial testing, or add your Vercel domain to the allowed list.
--   **Database Connection**: If the backend fails to start, check the `DATABASE_URL` in Render. Ensure "SSL" is enabled if required by the provider.
+-   **Backend Connection**: If the app works but data isn't saving, double-check the `EXPO_PUBLIC_API_URL` in `eas.json` matches your active Render URL.
+-   **Database**: Check Render logs to ensure the backend connected to Neon successfully.

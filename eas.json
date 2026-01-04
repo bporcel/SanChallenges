@@ -12,7 +12,7 @@
         },
         "production": {
             "env": {
-                "EXPO_PUBLIC_API_URL": "https://sanchallengesapi.onrender.com"
+                "EXPO_PUBLIC_API_URL": "https://sanchallenges.onrender.com"
             }
         }
     },
