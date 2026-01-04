@@ -7,9 +7,12 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "server": "node server/index.js"
+    "server": "docker-compose up -d && npx wait-on tcp:5433 && npx prisma db push && node server/index.js",
+    "db:reset": "docker-compose down -v && docker-compose up -d && npx wait-on tcp:5433 && npx prisma db push",
+    "db:studio": "npx prisma studio"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "cors": "^2.8.5",
     "expo": "~54.0.30",
@@ -28,7 +31,9 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
-    "typescript": "~5.9.2"
+    "prisma": "^5.22.0",
+    "typescript": "~5.9.2",
+    "wait-on": "^9.0.3"
   },
   "private": true
 }

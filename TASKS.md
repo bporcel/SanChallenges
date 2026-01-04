@@ -10,10 +10,12 @@
 - [x] Eliminar reto
 - [x] Alias de usuario
 - [x] Deshacer check diario
+- [x] Migración a PostgreSQL + Prisma (Production Ready)
 
 ## Mejoras futuras
 
 - Histórico
+- Notificaciones push (Expo)
 
 ## Ideas descartadas
 - Login

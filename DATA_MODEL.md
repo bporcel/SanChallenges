@@ -1,28 +1,32 @@
 # Data Model
 
+> **Note:** The authoritative data schema is now defined in `prisma/schema.prisma`.
+
 ## User
-- id (UUID local)
-- displayName (required)
+- id (String, UUID)
+- displayName (String)
+- updatedAt (DateTime)
 
 ## Challenge
-- id
-- title
-- description
-- points
-- inviteCode
+- id (String, UUID)
+- title (String)
+- description (String)
+- points (Int)
+- inviteCode (String, Unique)
+- createdAt (DateTime)
 
-## Participation
-- userId
-- challengeId
-- joinedAt
+## Participant (Join Table)
+- userId (FK User)
+- challengeId (FK Challenge)
+- joinedAt (DateTime)
 
 ## Check
-- id
-- userId
-- challengeId
-- date
-- completed
+- id (String, UUID)
+- userId (FK User)
+- challengeId (FK Challenge)
+- date (String, YYYY-MM-DD)
+- completed (Boolean)
 
-## Relaciones
-- User N..M Challenge (via Participation)
+## Relationships
+- User N..M Challenge (via Participant)
 - User 1..N Check

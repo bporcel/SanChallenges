@@ -1,10 +1,11 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const cors = require('cors');
 const crypto = require('crypto');
+const { PrismaClient } = require('@prisma/client');
 
+const prisma = new PrismaClient();
 const app = express();
+
 app.use(express.json());
 app.use(cors());
 
@@ -17,168 +18,196 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', time: Date.now() });
 });
 
-const DATA_FILE = path.join(__dirname, 'data.json');
-
-// Helper to read/write data
-const db = {
-    read: () => {
-        if (!fs.existsSync(DATA_FILE)) {
-            return { challenges: [], participants: [], checks: [], users: [] };
-        }
-        const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-        if (!data.users) data.users = []; // Migration
-        return data;
-    },
-    write: (data) => {
-        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    }
-};
-
 // Generate 6-char invite code
 const generateInviteCode = () => {
     return crypto.randomBytes(3).toString('hex').toUpperCase();
 };
 
+// Helper to format dates to timestamps for compatibility
+const formatChallenge = (c) => ({
+    ...c,
+    createdAt: c.createdAt.getTime()
+});
+
 // POST /challenges - Create new challenge
-app.post('/challenges', (req, res) => {
+app.post('/challenges', async (req, res) => {
     console.log('Creating challenge with body:', req.body);
     const { title, description, points, userId } = req.body;
     if (!title || !userId) return res.status(400).json({ error: 'Missing fields' });
 
-    const data = db.read();
-    const newChallenge = {
-        id: crypto.randomUUID(),
-        title,
-        description: description || '',
-        points: points || 0,
-        inviteCode: generateInviteCode(),
-        createdAt: Date.now()
-    };
+    try {
+        // Ensure user exists
+        let user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            user = await prisma.user.create({
+                data: { id: userId, displayName: 'Unknown User' }
+            });
+        }
 
-    data.challenges.push(newChallenge);
+        const newChallenge = await prisma.challenge.create({
+            data: {
+                title,
+                description: description || '',
+                points: points || 0,
+                inviteCode: generateInviteCode(),
+                participants: {
+                    create: {
+                        userId: userId
+                    }
+                }
+            }
+        });
 
-    // Auto-join creator
-    data.participants.push({
-        userId,
-        challengeId: newChallenge.id,
-        joinedAt: Date.now()
-    });
-
-    db.write(data);
-    res.json(newChallenge);
+        res.json(formatChallenge(newChallenge));
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // POST /challenges/join - Join via code
-app.post('/challenges/join', (req, res) => {
+app.post('/challenges/join', async (req, res) => {
     const { inviteCode, userId } = req.body;
     if (!inviteCode || !userId) return res.status(400).json({ error: 'Missing fields' });
 
-    const data = db.read();
-    const challenge = data.challenges.find(c => c.inviteCode === inviteCode);
-
-    if (!challenge) return res.status(404).json({ error: 'Challenge not found' });
-
-    const existing = data.participants.find(p => p.userId === userId && p.challengeId === challenge.id);
-    if (!existing) {
-        data.participants.push({
-            userId,
-            challengeId: challenge.id,
-            joinedAt: Date.now()
+    try {
+        const challenge = await prisma.challenge.findUnique({
+            where: { inviteCode }
         });
-        db.write(data);
-    }
 
-    res.json(challenge);
+        if (!challenge) return res.status(404).json({ error: 'Challenge not found' });
+
+        // Ensure user exists
+        let user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            user = await prisma.user.create({
+                data: { id: userId, displayName: 'Unknown User' }
+            });
+        }
+
+        // Join if not already joined
+        await prisma.participant.upsert({
+            where: { userId_challengeId: { userId, challengeId: challenge.id } },
+            update: {},
+            create: {
+                userId,
+                challengeId: challenge.id
+            }
+        });
+
+        res.json(formatChallenge(challenge));
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // GET /challenges/:id - Get challenge details
-app.get('/challenges/:id', (req, res) => {
-    const data = db.read();
-    const challenge = data.challenges.find(c => c.id === req.params.id);
-    if (!challenge) return res.status(404).json({ error: 'Not found' });
-    res.json(challenge);
+app.get('/challenges/:id', async (req, res) => {
+    try {
+        const challenge = await prisma.challenge.findUnique({
+            where: { id: req.params.id }
+        });
+        if (!challenge) return res.status(404).json({ error: 'Not found' });
+        res.json(formatChallenge(challenge));
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // POST /users - Update user profile
-app.post('/users', (req, res) => {
+app.post('/users', async (req, res) => {
     const { id, displayName } = req.body;
     if (!id || !displayName) return res.status(400).json({ error: 'Missing fields' });
 
-    const data = db.read();
-    const existingIndex = data.users.findIndex(u => u.id === id);
-
-    const newUser = { id, displayName, updatedAt: Date.now() };
-
-    if (existingIndex >= 0) {
-        data.users[existingIndex] = newUser;
-    } else {
-        data.users.push(newUser);
+    try {
+        const user = await prisma.user.upsert({
+            where: { id },
+            update: { displayName, updatedAt: new Date() },
+            create: { id, displayName, updatedAt: new Date() }
+        });
+        res.json({ ...user, updatedAt: user.updatedAt.getTime() });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Internal server error' });
     }
-
-    db.write(data);
-    res.json(newUser);
 });
 
 // POST /checks - Sync check
-app.post('/checks', (req, res) => {
+app.post('/checks', async (req, res) => {
     const { id, userId, challengeId, date, completed } = req.body;
     if (!userId || !challengeId || !date) return res.status(400).json({ error: 'Missing fields' });
 
-    const data = db.read();
+    try {
+        const checkData = {
+            userId,
+            challengeId,
+            date,
+            completed: completed !== false
+        };
 
-    // Remove existing check for same day/user/challenge if exists
-    const existingIndex = data.checks.findIndex(c =>
-        c.userId === userId &&
-        c.challengeId === challengeId &&
-        c.date === date
-    );
+        let check;
+        if (id) {
+            check = await prisma.check.upsert({
+                where: { id },
+                update: { ...checkData },
+                create: { id, ...checkData }
+            });
+        } else {
+            check = await prisma.check.upsert({
+                where: { userId_challengeId_date: { userId, challengeId, date } },
+                update: { completed: checkData.completed },
+                create: { ...checkData }
+            });
+        }
 
-    const newCheck = {
-        id: id || crypto.randomUUID(),
-        userId,
-        challengeId,
-        date,
-        completed: completed !== false // default true
-    };
-
-    if (existingIndex >= 0) {
-        data.checks[existingIndex] = newCheck;
-    } else {
-        data.checks.push(newCheck);
+        res.json(check);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Internal server error' });
     }
-
-    db.write(data);
-    res.json(newCheck);
 });
 
 // GET /challenges/:id/ranking
-app.get('/challenges/:id/ranking', (req, res) => {
+app.get('/challenges/:id/ranking', async (req, res) => {
     const { id } = req.params;
-    const data = db.read();
+    try {
+        // Group by user and count completed checks
+        const ranking = await prisma.check.groupBy({
+            by: ['userId'],
+            where: {
+                challengeId: id,
+                completed: true
+            },
+            _count: {
+                userId: true
+            },
+            orderBy: {
+                _count: {
+                    userId: 'desc'
+                }
+            }
+        });
 
-    // Filter checks for this challenge
-    const challengeChecks = data.checks.filter(c => c.challengeId === id && c.completed);
+        // Fetch user details
+        const userIds = ranking.map(r => r.userId);
+        const users = await prisma.user.findMany({
+            where: { id: { in: userIds } }
+        });
+        const userMap = new Map(users.map(u => [u.id, u]));
 
-    // Group by user
-    const ranking = {};
-    challengeChecks.forEach(c => {
-        if (!ranking[c.userId]) ranking[c.userId] = 0;
-        ranking[c.userId]++;
-    });
+        const result = ranking.map(r => ({
+            userId: r.userId,
+            count: r._count.userId,
+            displayName: userMap.get(r.userId)?.displayName || 'Unknown'
+        }));
 
-    // Convert to array and join with user data
-    const result = Object.entries(ranking)
-        .map(([userId, count]) => {
-            const user = data.users.find(u => u.id === userId);
-            return {
-                userId,
-                count,
-                displayName: user ? user.displayName : null
-            };
-        })
-        .sort((a, b) => b.count - a.count);
-
-    res.json(result);
+        res.json(result);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 const PORT = process.env.PORT || 3000;

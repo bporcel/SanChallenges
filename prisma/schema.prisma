@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String        @id
+  displayName String
+  updatedAt   DateTime      @default(now())
+  
+  participations Participant[]
+  checks         Check[]
+}
+
+model Challenge {
+  id          String        @id @default(uuid())
+  title       String
+  description String        @default("")
+  points      Int           @default(0)
+  inviteCode  String        @unique
+  createdAt   DateTime      @default(now())
+
+  participants Participant[]
+  checks       Check[]
+}
+
+model Participant {
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  challengeId String
+  joinedAt    DateTime  @default(now())
+
+  @@id([userId, challengeId])
+}
+
+model Check {
+  id          String    @id @default(uuid())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  challengeId String
+  date        String    // YYYY-MM-DD
+  completed   Boolean   @default(true)
+
+  @@unique([userId, challengeId, date])
+}

@@ -4,14 +4,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const STORAGE_KEY = 'override_api_url';
 
 const DEV_API_URL = Platform.select({
-    android: 'http://192.168.0.20:3000',
-    ios: 'http://192.168.0.20:3000',
-    default: 'http://192.168.0.20:3000',
+    android: 'http://10.0.2.2:3000',
+    ios: 'http://localhost:3000',
+    default: 'http://localhost:3000',
 });
 
-const PROD_API_URL = 'https://your-production-api.com';
-
-export const DEFAULT_API_URL = process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? DEV_API_URL : PROD_API_URL);
+export const DEFAULT_API_URL = process.env.EXPO_PUBLIC_API_URL || DEV_API_URL;
 
 let currentApiUrl = DEFAULT_API_URL;
 
