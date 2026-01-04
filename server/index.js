@@ -211,6 +211,20 @@ app.get('/challenges/:id/ranking', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
+
+// Graceful shutdown for Docker
+const shutdown = async () => {
+    console.log('Received shutdown signal. Closing server...');
+    server.close(() => {
+        console.log('HTTP server closed.');
+    });
+    await prisma.$disconnect();
+    console.log('Prisma disconnected.');
+    process.exit(0);
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

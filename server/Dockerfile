@@ -2,10 +2,14 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files from root
-COPY package*.json ./
+# Copy package files from server directory
+COPY server/package.json ./package.json
 
 # Install dependencies
+# Ensure we install devDependencies (needed for prisma CLI) by forcing development mode during install
+ENV NODE_ENV=development
+# Install OpenSSL for Prisma
+RUN apk -U upgrade && apk add --no-cache openssl
 RUN npm install --legacy-peer-deps
 
 # Copy server code and prisma schema
@@ -14,6 +18,9 @@ COPY prisma ./prisma
 
 # Generate Prisma Client
 RUN npx prisma generate
+
+# Set production environment for runtime
+ENV NODE_ENV=production
 
 # Expose port
 EXPOSE 3000

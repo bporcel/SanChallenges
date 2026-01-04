@@ -1,0 +1,9 @@
+node_modules
+.git
+.expo
+.env
+npm-debug.log
+Dockerfile
+docker-compose.yml
+README.md
+*.md

@@ -1,109 +1,94 @@
-# Deployment Guide
+# Production Deployment Guide
 
-This guide covers how to deploy the SanChallenges backend to **Render** with **PostgreSQL** and build the frontend with **Expo EAS**.
+This guide outlines the strategy and steps to deploy the SanChallenges application to production for free.
 
-## 1. Backend Deployment (Render)
+## Strategy Overview
 
-We will deploy the Node.js server using Docker on Render, connected to a managed PostgreSQL database.
+We will use a "Best of Breed" free tier strategy:
+- **Database**: **Neon** (Serverless Postgres) - Generous free tier, easy to use.
+- **Backend**: **Render** (Web Service) - Free tier for Node.js apps.
+- **Frontend**: **Vercel** (Static/SPA) - Excellent free tier for Expo Web.
 
-### Prerequisites
-- A [Render](https://render.com) account.
-- This repository pushed to GitHub/GitLab.
+## Prerequisites
 
-### Steps
-
-#### A. Create Database
-1. Go to Render Dashboard and click **New +** -> **PostgreSQL**.
-2. **Name**: `sanchallenges-db`
-3. **Region**: Same as your web service (e.g., Frankfurt).
-4. **Plan**: Free (for testing) or Standard.
-5. Click **Create Database**.
-6. Once created, copy the **Internal Connection String** (starts with `postgres://...`).
-
-#### B. Create Web Service
-1. Click **New +** -> **Web Service**.
-2. Connect your repository.
-3. **Name**: `sanchallenges-api`
-4. **Runtime**: `Docker`
-5. **Region**: Same as database.
-6. **Branch**: `main`
-7. **Root Directory**: Leave empty.
-8. **Dockerfile Path**: `./server/Dockerfile`
-
-#### C. Environment Variables
-Add the following environment variables to the Web Service:
-- `PORT`: `3000`
-- `DATABASE_URL`: Paste the **Internal Connection String** from the database.
-
-#### D. Deploy
-1. Click **Create Web Service**.
-2. The service will build, run migrations, and start.
-3. **Copy the URL** (e.g., `https://sanchallenges-api.onrender.com`).
-
-### Data Migration (Optional)
-If you have a backup of your old `data.json` and want to migrate it:
-1. Ensure your local machine has `Node.js` installed.
-2. Create a `.env` file in the root with `DATABASE_URL=<External Connection String>`.
-3. Place your `data.json` in the `server/` directory.
-4. Run:
-   ```bash
-   npm install
-   npx prisma db push
-   node prisma/seed.js
-   ```
+1.  **GitHub Account**: Your code must be pushed to a GitHub repository.
+2.  **Neon Account**: [Sign up here](https://neon.tech/)
+3.  **Render Account**: [Sign up here](https://render.com/)
+4.  **Vercel Account**: [Sign up here](https://vercel.com/)
 
 ---
 
-## 2. Frontend Build (Expo EAS)
+## Step 1: Deploy Database (Neon)
 
-We will build the React Native app using Expo Application Services (EAS).
+1.  Log in to **Neon Console**.
+2.  Click **"New Project"**.
+3.  Name it `sanchallenges-db` (or similar).
+4.  Select the region closest to you (or US East).
+5.  Click **"Create Project"**.
+6.  **Copy the Connection String**:
+    - Look for the "Connection Details" section.
+    - Copy the connection string (it looks like `postgres://user:password@host/neondb...`).
+    - **Save this securely**, you will need it for the Backend deployment.
 
-### Prerequisites
-- EAS CLI installed: `npm install -g eas-cli`
-- Expo account logged in: `eas login`
+---
 
-### Steps
-1. **Configure API URL**
-   - Open `eas.json` in your project.
-   - Update the `EXPO_PUBLIC_API_URL` under the `production` profile with your Render URL.
+## Step 2: Deploy Backend (Render)
 
-   ```json
-   "production": {
-     "env": {
-       "EXPO_PUBLIC_API_URL": "https://sanchallenges-api.onrender.com"
-     }
-   }
-   ```
+1.  Log in to **Render Dashboard**.
+2.  Click **"New +"** -> **"Web Service"**.
+3.  Connect your **GitHub repository**.
+4.  **Configure the Service**:
+    - **Name**: `sanchallenges-api`
+    - **Region**: Same as your DB if possible.
+    - **Branch**: `main` (or your production branch)
+    - **Runtime**: **Docker**
+    - **Root Directory**: `.` (This is the build context)
+    - **Dockerfile Path**: `server/Dockerfile`
+    - **Instance Type**: Free
+    - **Health Check Path**: `/health` (This ensures Render knows when your app is ready)
+5.  **Environment Variables**:
+    - Scroll down to "Environment Variables".
+    - Add Key: `DATABASE_URL`
+    - Add Value: Paste the **Neon Connection String** from Step 1.
+    - *Note: You might need to append `?sslmode=require` to the connection string if it's not there, but Neon usually handles this.*
+6.  Click **"Create Web Service"**.
+7.  Wait for the build and deployment to finish.
+    - Render will build the Docker image using the `server/Dockerfile`.
+    - The container will start, run `npx prisma db push` to sync your database schema, and then start the server.
+8.  **Copy the Backend URL**:
+    - Once deployed, you will see a URL like `https://sanchallenges-api.onrender.com`.
+    - **Save this**, you will need it for the Frontend deployment.
 
-2. **Build the App**
-   Run the build command for your target platform.
+---
 
-   **For Android:**
-   ```bash
-   eas build --profile production --platform android
-   ```
+## Step 3: Deploy Frontend (Vercel)
 
-   **For iOS:**
-   ```bash
-   eas build --profile production --platform ios
-   ```
+1.  Log in to **Vercel Dashboard**.
+2.  Click **"Add New..."** -> **"Project"**.
+3.  Import your **GitHub repository**.
+4.  **Configure Project**:
+    - **Framework Preset**: Vercel should automatically detect **Expo**. If not, select "Other" or "Create React App" but Expo is best.
+    - **Root Directory**: `.`
+    - **Build Command**: `npx expo export -p web` (Vercel might default to `expo export`, ensure `-p web` is used if needed, or just `npx expo export`).
+        - *Correction*: The default `expo export` is usually fine for Expo Router.
+    - **Output Directory**: `dist`
+5.  **Environment Variables**:
+    - Expand "Environment Variables".
+    - Add Key: `EXPO_PUBLIC_API_URL`
+    - Add Value: Paste the **Render Backend URL** from Step 2 (e.g., `https://sanchallenges-api.onrender.com`).
+        - *Important*: Ensure no trailing slash `/` unless your code expects it (usually better without).
+6.  Click **"Deploy"**.
+7.  Wait for the build to complete.
+8.  **Done!** Your app is now live.
 
-3. **Install & Test**
-   - Once the build is complete, download the `.apk` (Android) or install via TestFlight (iOS).
-   - Open the app and verify it connects to your Render backend.
+## Verification
 
-4. **Submit to Stores (Optional)**
-   When you are ready to publish to the Google Play Store or Apple App Store:
-   ```bash
-   eas submit --platform android
-   # or
-   eas submit --platform ios
-   ```
+1.  Open your Vercel URL.
+2.  Try to log in or view challenges.
+3.  If data loads, the Frontend -> Backend -> Database connection is working!
 
-## Summary Checklist
+## Troubleshooting
 
-1. [ ] **Render DB**: Database created and connection string copied.
-2. [ ] **Render App**: Service deployed with `DATABASE_URL`.
-3. [ ] **Code**: `eas.json` updated with Render URL.
-4. [ ] **Expo**: `eas build` ran successfully.
-5. [ ] **Device**: App installed and verified.
+-   **CORS Issues**: If the frontend cannot talk to the backend, check the backend logs. You might need to configure CORS in `server/index.js` to allow the Vercel domain.
+    -   *Quick Fix*: Allow all origins `*` in `cors()` options during initial testing, or add your Vercel domain to the allowed list.
+-   **Database Connection**: If the backend fails to start, check the `DATABASE_URL` in Render. Ensure "SSL" is enabled if required by the provider.

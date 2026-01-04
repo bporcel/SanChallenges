@@ -1,0 +1,20 @@
+{
+    "name": "sanchallenges-api",
+    "version": "1.0.0",
+    "description": "Backend for SanChallenges",
+    "main": "index.js",
+    "scripts": {
+        "start": "node server/index.js"
+    },
+    "dependencies": {
+        "@prisma/client": "^5.22.0",
+        "cors": "^2.8.5",
+        "express": "^5.2.1"
+    },
+    "devDependencies": {
+        "prisma": "^5.22.0"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}
