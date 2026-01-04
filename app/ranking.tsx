@@ -8,11 +8,14 @@ import { ChallengeRepository } from '../src/data/repositories/ChallengeRepositor
 import { CheckRepository } from '../src/data/repositories/CheckRepository';
 import { Challenge } from '../src/domain/models/Challenge';
 import { UserRepository } from '../src/data/repositories/UserRepository';
+import { User } from '../src/domain/models/User';
 import { Card } from '../src/ui/components/Card';
 import { colors } from '../src/ui/theme/colors';
 import { spacing, layout } from '../src/ui/theme/spacing';
 import { typography } from '../src/ui/theme/typography';
 import { GamificationService } from '../src/domain/services/GamificationService';
+import { LoadingOverlay } from '../src/ui/components/LoadingOverlay';
+import { t } from '../src/i18n/i18n';
 
 
 
@@ -28,31 +31,37 @@ export default function RankingScreen() {
     const insets = useSafeAreaInsets();
     const [challenges, setChallenges] = useState<Challenge[]>([]);
     const [rankings, setRankings] = useState<Record<string, UserRanking[]>>({});
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     const loadData = useCallback(async () => {
-        const user = await UserRepository.getUser();
-        setCurrentUserId(user?.id || null);
+        setIsLoading(true);
+        try {
+            const user = await UserRepository.getUser();
+            setCurrentUser(user);
 
-        const allChallenges = await ChallengeRepository.getAll();
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setChallenges(allChallenges);
+            const allChallenges = await ChallengeRepository.getAll();
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setChallenges(allChallenges);
 
-        const newRankings: Record<string, UserRanking[]> = {};
-        for (const challenge of allChallenges) {
-            try {
-                const ranking = await CheckRepository.getRanking(challenge.id);
-                // Calculate total points
-                const rankingWithPoints = ranking.map(r => ({
-                    ...r,
-                    totalPoints: r.count * (challenge.points || 0)
-                }));
-                newRankings[challenge.id] = rankingWithPoints;
-            } catch (e) {
-                console.error(`Failed to load ranking for ${challenge.id}`, e);
+            const newRankings: Record<string, UserRanking[]> = {};
+            for (const challenge of allChallenges) {
+                try {
+                    const ranking = await CheckRepository.getRanking(challenge.id);
+                    // Calculate total points
+                    const rankingWithPoints = ranking.map(r => ({
+                        ...r,
+                        totalPoints: r.count * (challenge.points || 0)
+                    }));
+                    newRankings[challenge.id] = rankingWithPoints;
+                } catch (e) {
+                    console.error(`Failed to load ranking for ${challenge.id}`, e);
+                }
             }
+            setRankings(newRankings);
+        } finally {
+            setIsLoading(false);
         }
-        setRankings(newRankings);
     }, []);
 
     useFocusEffect(
@@ -66,28 +75,40 @@ export default function RankingScreen() {
         router.back();
     };
 
-    const getRankStyle = (index: number) => {
-        switch (index) {
-            case 0: return { color: colors.rank.gold, fontSize: 20 };
-            case 1: return { color: colors.rank.silver, fontSize: 18 };
-            case 2: return { color: colors.rank.bronze, fontSize: 18 };
+    const getRankStyle = (rank: number) => {
+        switch (rank) {
+            case 1: return { color: colors.rank.gold, fontSize: 20 };
+            case 2: return { color: colors.rank.silver, fontSize: 18 };
+            case 3: return { color: colors.rank.bronze, fontSize: 18 };
             default: return { color: colors.text.secondary, fontSize: 16 };
         }
     };
 
-    const getRankIcon = (index: number) => {
-        switch (index) {
-            case 0: return '👑';
-            case 1: return '🥈';
-            case 2: return '🥉';
-            default: return `#${index + 1}`;
+    const getRankIcon = (rank: number) => {
+        switch (rank) {
+            case 1: return '👑';
+            case 2: return '🥈';
+            case 3: return '🥉';
+            default: return `#${rank}`;
         }
     };
 
     const renderRankingItem = (item: UserRanking, index: number, allRankings: UserRanking[]) => {
-        const isCurrentUser = item.userId === currentUserId;
+        const isCurrentUser = item.userId === currentUser?.id;
         const prevUser = index > 0 ? allRankings[index - 1] : null;
         const pointDiff = prevUser ? prevUser.totalPoints - item.totalPoints : null;
+
+        // Calculate rank (1-indexed, handles ties)
+        let rank = 1;
+        for (let i = 0; i < index; i++) {
+            if (allRankings[i].totalPoints > item.totalPoints) {
+                rank++;
+            }
+        }
+
+        const displayName = isCurrentUser
+            ? currentUser.displayName
+            : (item.displayName || `User ${item.userId.substr(0, 6)}...`);
 
         return (
             <View
@@ -98,8 +119,8 @@ export default function RankingScreen() {
                 ]}
             >
                 <View style={styles.rankBadge}>
-                    <Text style={[styles.rankNumber, getRankStyle(index)]}>
-                        {getRankIcon(index)}
+                    <Text style={[styles.rankNumber, getRankStyle(rank)]}>
+                        {getRankIcon(rank)}
                     </Text>
                 </View>
                 <View style={styles.userInfo}>
@@ -108,17 +129,17 @@ export default function RankingScreen() {
                             styles.userId,
                             isCurrentUser && styles.currentUserText
                         ]}>
-                            {item.displayName || `User ${item.userId.substr(0, 6)}...`}
+                            {displayName}
                         </Text>
                     </View>
-                    {isCurrentUser && <Text style={styles.youBadge}>(You)</Text>}
+                    {isCurrentUser && <Text style={styles.youBadge}>{t('ranking.you')}</Text>}
                 </View>
                 <View style={styles.statsContainer}>
-                    <Text style={styles.points}>{item.totalPoints} pts</Text>
+                    <Text style={styles.points}>{item.totalPoints} {t('common.pts')}</Text>
                     {pointDiff !== null && pointDiff > 0 && (
-                        <Text style={styles.pointDiff}>-{pointDiff} to next</Text>
+                        <Text style={styles.pointDiff}>{t('ranking.toNext', { diff: pointDiff })}</Text>
                     )}
-                    <Text style={styles.checks}>{item.count} checks</Text>
+                    <Text style={styles.checks}>{item.count} {t('ranking.checks')}</Text>
                 </View>
             </View>
         );
@@ -131,7 +152,7 @@ export default function RankingScreen() {
                 {rankings[item.id]?.length > 0 ? (
                     rankings[item.id].slice(0, 5).map((r, i) => renderRankingItem(r, i, rankings[item.id]))
                 ) : (
-                    <Text style={styles.noData}>No checks yet. Be the first!</Text>
+                    <Text style={styles.noData}>{t('ranking.noData')}</Text>
                 )}
             </View>
         </Card>
@@ -148,18 +169,19 @@ export default function RankingScreen() {
                     >
                         <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Leaderboard</Text>
+                    <Text style={styles.headerTitle}>{t('ranking.title')}</Text>
                     <View style={{ width: 44 }} />
                 </View>
-                <Text style={styles.headerSubtitle}>Top performers by challenge</Text>
+                <Text style={styles.headerSubtitle}>{t('ranking.subtitle')}</Text>
             </View>
             <FlatList
                 data={challenges}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
-                ListEmptyComponent={<Text style={styles.emptyText}>No challenges joined.</Text>}
+                ListEmptyComponent={<Text style={styles.emptyText}>{t('ranking.empty')}</Text>}
             />
+            <LoadingOverlay visible={isLoading} />
         </SafeAreaView>
     );
 }

@@ -9,6 +9,9 @@ const DEV_API_URL = Platform.select({
     default: 'http://localhost:3000',
 });
 
+export const LOCAL_API_URL = 'http://192.168.0.20:3000';
+export const PROD_API_URL = 'https://sanchallenges.onrender.com';
+
 export const DEFAULT_API_URL = process.env.EXPO_PUBLIC_API_URL || DEV_API_URL;
 
 let currentApiUrl = DEFAULT_API_URL;

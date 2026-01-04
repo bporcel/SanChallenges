@@ -10,6 +10,8 @@ import { Card } from '../src/ui/components/Card';
 import { colors } from '../src/ui/theme/colors';
 import { spacing, layout } from '../src/ui/theme/spacing';
 import { typography } from '../src/ui/theme/typography';
+import { LoadingOverlay } from '../src/ui/components/LoadingOverlay';
+import { t } from '../src/i18n/i18n';
 
 export default function JoinChallengeScreen() {
     const router = useRouter();
@@ -19,7 +21,7 @@ export default function JoinChallengeScreen() {
 
     const handleJoin = async () => {
         if (!inviteCode) {
-            Alert.alert('Error', 'Invite code is required');
+            Alert.alert(t('common.error'), t('join.errorCodeRequired'));
             return;
         }
 
@@ -28,7 +30,7 @@ export default function JoinChallengeScreen() {
             await ChallengeRepository.join(inviteCode.toUpperCase());
             router.back();
         } catch (e) {
-            Alert.alert('Error', 'Failed to join challenge. Check code or connection.');
+            Alert.alert(t('common.error'), t('join.errorFailed'));
         } finally {
             setLoading(false);
         }
@@ -55,37 +57,37 @@ export default function JoinChallengeScreen() {
                             >
                                 <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
                             </TouchableOpacity>
-                            <Text style={styles.headerTitle}>Join Challenge</Text>
+                            <Text style={styles.headerTitle}>{t('join.title')}</Text>
                             <View style={{ width: 44 }} />
                         </View>
-                        <Text style={styles.headerSubtitle}>Enter the code to compete with friends</Text>
+                        <Text style={styles.headerSubtitle}>{t('join.subtitle')}</Text>
                     </View>
 
                     <Card style={styles.formCard}>
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Invite Code</Text>
+                            <Text style={styles.label}>{t('join.labelCode')}</Text>
                             <TextInput
                                 style={styles.input}
                                 value={inviteCode}
                                 onChangeText={setInviteCode}
-                                placeholder="e.g., ABC123"
+                                placeholder={t('join.placeholderCode')}
                                 placeholderTextColor={colors.text.tertiary}
                                 autoCapitalize="characters"
                                 maxLength={10}
                             />
-                            <Text style={styles.helperText}>Ask your friend for the challenge code</Text>
+                            <Text style={styles.helperText}>{t('join.helperCode')}</Text>
                         </View>
 
                         <View style={styles.buttonGroup}>
                             <Button
-                                title={loading ? "Joining..." : "Join Challenge"}
+                                title={loading ? t('join.joining') : t('join.joinButton')}
                                 onPress={handleJoin}
                                 disabled={loading}
                                 size="large"
                                 style={styles.joinButton}
                             />
                             <Button
-                                title="Cancel"
+                                title={t('common.cancel')}
                                 variant="ghost"
                                 onPress={() => router.back()}
                                 disabled={loading}
@@ -94,6 +96,7 @@ export default function JoinChallengeScreen() {
                     </Card>
                 </ScrollView>
             </KeyboardAvoidingView>
+            <LoadingOverlay visible={loading} />
         </SafeAreaView>
     );
 }

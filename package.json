@@ -7,8 +7,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "server": "docker-compose up -d postgres && npx wait-on tcp:5433 && npx prisma db push && node server/index.js",
-    "db:reset": "docker-compose down -v && docker-compose up -d postgres && npx wait-on tcp:5433 && npx prisma db push",
+    "server": "docker compose up -d postgres && npx wait-on tcp:5433 && npx prisma db push && node server/index.js",
+    "db:reset": "docker compose down -v && docker compose up -d postgres && npx wait-on tcp:5433 && npx prisma db push",
     "db:studio": "npx prisma studio"
   },
   "dependencies": {

@@ -15,6 +15,12 @@ export const UserRepository = {
                 if (!user.displayName) {
                     user.displayName = generateFunnyName();
                     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+                    // Sync with server (fire and forget)
+                    fetch(`${Config.API_URL}/users`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(user)
+                    }).catch(e => console.error('Background sync failed', e));
                 }
                 return user;
             }
@@ -26,6 +32,14 @@ export const UserRepository = {
                 displayName: generateFunnyName()
             };
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
+
+            // Sync with server (fire and forget)
+            fetch(`${Config.API_URL}/users`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newUser)
+            }).catch(e => console.error('Background sync failed', e));
+
             return newUser;
         } catch (e) {
             console.error('Error managing user identity', e);

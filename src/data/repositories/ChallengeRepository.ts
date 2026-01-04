@@ -76,6 +76,13 @@ export const ChallengeRepository = {
             const challenges = await this.getAll();
             const filtered = challenges.filter(c => c.id !== challengeId);
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+
+            // Sync with server (fire and forget)
+            const userId = await UserRepository.getUserId();
+            fetch(`${Config.API_URL}/challenges/${challengeId}/participants/${userId}`, {
+                method: 'DELETE'
+            }).catch(e => console.error('Background sync failed', e));
+
         } catch (e) {
             console.error('Error deleting challenge', e);
             throw e;

@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Alert, LayoutAnimation, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Alert, LayoutAnimation, Platform, TouchableOpacity } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { ChallengeRepository } from '../src/data/repositories/ChallengeRepository';
 import { CheckRepository } from '../src/data/repositories/CheckRepository';
 import { Challenge } from '../src/domain/models/Challenge';
@@ -15,6 +16,7 @@ import { colors } from '../src/ui/theme/colors';
 import { spacing, layout } from '../src/ui/theme/spacing';
 import { typography } from '../src/ui/theme/typography';
 import { GamificationService } from '../src/domain/services/GamificationService';
+import { t } from '../src/i18n/i18n';
 
 
 
@@ -85,12 +87,12 @@ export default function HomeScreen() {
 
     const handleDelete = async (challengeId: string) => {
         Alert.alert(
-            'Delete Challenge',
-            'Are you sure you want to remove this challenge from your list?',
+            t('home.deleteTitle'),
+            t('home.deleteMessage'),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Delete',
+                    text: t('common.delete'),
                     style: 'destructive',
                     onPress: async () => {
                         await ChallengeRepository.delete(challengeId);
@@ -122,13 +124,15 @@ export default function HomeScreen() {
             <View style={styles.itemFooter}>
                 <View style={styles.streakContainer}>
                     <Text style={styles.streakText}>
-                        {streaks[item.id] > 0 ? `🔥 ${streaks[item.id]} day streak` : '❄️ No streak'}
+                        {streaks[item.id] > 0
+                            ? t('home.streak', { count: streaks[item.id] })
+                            : t('home.noStreak')}
                     </Text>
-                    <Text style={styles.inviteCodeSubtle}> • Code: {item.inviteCode}</Text>
+                    <Text style={styles.inviteCodeSubtle}> • {t('home.code', { code: item.inviteCode })}</Text>
                 </View>
                 <View style={styles.actions}>
                     <Button
-                        title="Delete"
+                        title={t('common.delete')}
                         variant="ghost"
                         size="small"
                         onPress={() => handleDelete(item.id)}
@@ -136,7 +140,7 @@ export default function HomeScreen() {
                         textStyle={{ color: colors.status.error }}
                     />
                     <Button
-                        title={checkedToday[item.id] ? 'Undo' : 'Check'}
+                        title={checkedToday[item.id] ? t('common.undo') : t('common.check')}
                         variant={checkedToday[item.id] ? 'secondary' : 'primary'}
                         size="small"
                         onPress={() => handleCheck(item.id)}
@@ -152,20 +156,21 @@ export default function HomeScreen() {
             {user && (
                 <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
                     <View style={styles.headerLeft}>
-                        <Text style={styles.greeting}>Hello,</Text>
-                        <Text style={styles.userName}>{user.displayName}!</Text>
+                        <TouchableOpacity
+                            style={styles.userNameContainer}
+                            onPress={() => setIsEditNameVisible(true)}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={styles.greeting}>{t('home.greeting')}</Text>
+                            <Text style={styles.userName}>{user.displayName}</Text>
+                            <Ionicons name="pencil-outline" size={14} color={colors.primary} style={styles.editIcon} />
+                        </TouchableOpacity>
                     </View>
                     <View style={styles.headerRight}>
                         <View style={styles.totalPointsBadge}>
-                            <Text style={styles.totalPointsLabel}>Total Score</Text>
                             <Text style={styles.totalPointsValue}>{totalPoints}</Text>
+                            <Text style={styles.totalPointsLabel}>{t('common.pts')}</Text>
                         </View>
-                        <Button
-                            title="Edit Name"
-                            variant="ghost"
-                            size="small"
-                            onPress={() => setIsEditNameVisible(true)}
-                        />
                     </View>
                 </View>
             )}
@@ -176,26 +181,26 @@ export default function HomeScreen() {
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>No challenges yet.</Text>
-                        <Text style={styles.emptySubtext}>Create one to get started!</Text>
+                        <Text style={styles.emptyText}>{t('home.noChallenges')}</Text>
+                        <Text style={styles.emptySubtext}>{t('home.createFirst')}</Text>
                     </View>
                 }
             />
             <View style={styles.footer}>
                 <Button
-                    title="Create New Challenge"
+                    title={t('home.createNew')}
                     onPress={() => router.push('/create')}
                     style={styles.footerButton}
                 />
                 <View style={styles.secondaryButtons}>
                     <Button
-                        title="Join Challenge"
+                        title={t('home.joinChallenge')}
                         variant="secondary"
                         onPress={() => router.push('/join')}
                         style={{ flex: 1, marginRight: spacing.s }}
                     />
                     <Button
-                        title="View Ranking"
+                        title={t('home.viewRanking')}
                         variant="outline"
                         onPress={() => router.push('/ranking')}
                         style={{ flex: 1, marginLeft: spacing.s }}
@@ -231,12 +236,22 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     greeting: {
-        ...typography.body,
+        ...typography.h2,
         color: colors.text.secondary,
+        fontWeight: '400',
+    },
+    userNameContainer: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
     },
     userName: {
         ...typography.h2,
         color: colors.text.primary,
+        fontWeight: 'bold',
+    },
+    editIcon: {
+        marginLeft: spacing.xs,
+        opacity: 0.6,
     },
     headerLeft: {
         flex: 1,
@@ -245,23 +260,25 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
     },
     totalPointsBadge: {
-        backgroundColor: colors.primary + '25', // ~15% opacity
+        backgroundColor: colors.primary + '15',
         paddingHorizontal: spacing.m,
         paddingVertical: spacing.xs,
-        borderRadius: layout.borderRadius.m,
-        alignItems: 'center',
-        marginBottom: spacing.xs,
+        borderRadius: layout.borderRadius.l,
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        borderWidth: 1,
+        borderColor: colors.primary + '30',
     },
     totalPointsLabel: {
         ...typography.caption,
-        color: colors.text.secondary,
-        fontSize: 10,
-        textTransform: 'uppercase',
+        color: colors.primary,
+        marginLeft: 2,
+        fontWeight: '600',
     },
     totalPointsValue: {
         ...typography.h3,
         color: colors.primary,
-        lineHeight: 24,
+        fontWeight: 'bold',
     },
     streakContainer: {
         flexDirection: 'row',

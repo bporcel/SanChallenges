@@ -169,16 +169,23 @@ app.post('/checks', async (req, res) => {
     }
 });
 
-// GET /challenges/:id/ranking
 app.get('/challenges/:id/ranking', async (req, res) => {
     const { id } = req.params;
     try {
+        // Fetch only users who are still participants
+        const participants = await prisma.participant.findMany({
+            where: { challengeId: id },
+            select: { userId: true }
+        });
+        const participantIds = new Set(participants.map(p => p.userId));
+
         // Group by user and count completed checks
         const ranking = await prisma.check.groupBy({
             by: ['userId'],
             where: {
                 challengeId: id,
-                completed: true
+                completed: true,
+                userId: { in: Array.from(participantIds) }
             },
             _count: {
                 userId: true
@@ -197,13 +204,39 @@ app.get('/challenges/:id/ranking', async (req, res) => {
         });
         const userMap = new Map(users.map(u => [u.id, u]));
 
-        const result = ranking.map(r => ({
-            userId: r.userId,
-            count: r._count.userId,
-            displayName: userMap.get(r.userId)?.displayName || 'Unknown'
-        }));
+        const result = ranking.map(r => {
+            const user = userMap.get(r.userId);
+            let displayName = user?.displayName;
+
+            // Fallback logic consistent with client
+            if (!displayName || displayName === 'Unknown User' || displayName === 'Unknown') {
+                displayName = `User ${r.userId.substr(0, 6)}...`;
+            }
+
+            return {
+                userId: r.userId,
+                count: r._count.userId,
+                displayName
+            };
+        });
 
         res.json(result);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// DELETE /challenges/:challengeId/participants/:userId - Leave challenge
+app.delete('/challenges/:challengeId/participants/:userId', async (req, res) => {
+    const { challengeId, userId } = req.params;
+    try {
+        await prisma.participant.delete({
+            where: {
+                userId_challengeId: { userId, challengeId }
+            }
+        });
+        res.json({ success: true });
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Internal server error' });

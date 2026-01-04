@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { networkLogger } from '../data/NetworkLogger';
-import { getApiUrl, setApiUrl, DEFAULT_API_URL } from '../config';
+import { getApiUrl, setApiUrl, DEFAULT_API_URL, LOCAL_API_URL, PROD_API_URL } from '../config';
 import { dateService } from '../data/DateService';
+import { t, setLocale, getCurrentLocale } from '../i18n/i18n';
 
 export const DebugPanel = () => {
     const [isVisible, setIsVisible] = useState(false);
@@ -18,14 +19,14 @@ export const DebugPanel = () => {
 
     const handleSaveUrl = async () => {
         await setApiUrl(apiUrl);
-        Alert.alert('Success', 'API URL updated. Please restart the app for changes to take full effect.');
+        Alert.alert(t('common.success'), t('debug.apiUpdated'));
     };
 
     const handleResetUrl = async () => {
         await setApiUrl(null);
         const defaultUrl = DEFAULT_API_URL || '';
         setApiUrlState(defaultUrl);
-        Alert.alert('Success', 'API URL reset to default. Please restart the app.');
+        Alert.alert(t('common.success'), t('debug.apiReset'));
     };
 
     const testConnection = async () => {
@@ -33,19 +34,19 @@ export const DebugPanel = () => {
             const response = await fetch(`${apiUrl}/health`);
             if (response.ok) {
                 const data = await response.json();
-                Alert.alert('Success', `Connected to server! Status: ${data.status}`);
+                Alert.alert(t('common.success'), t('debug.connected', { status: data.status }));
             } else {
-                Alert.alert('Error', `Server returned status ${response.status}`);
+                Alert.alert(t('common.error'), t('debug.serverError', { status: response.status }));
             }
         } catch (e: any) {
-            Alert.alert('Connection Failed', `Could not reach ${apiUrl}. Error: ${e.message}`);
+            Alert.alert(t('debug.connectionFailed'), t('debug.reachError', { url: apiUrl, error: e.message }));
         }
     };
 
     const handleSetDateOffset = async (offset: number) => {
         await dateService.setOffset(offset);
         setDateOffset(offset);
-        Alert.alert('Success', `Date offset set to ${offset} days. App is now in ${dateService.getToday()}.`);
+        Alert.alert(t('common.success'), t('debug.dateOffsetSet', { offset, date: dateService.getToday() }));
     };
 
     if (!isVisible) {
@@ -55,7 +56,7 @@ export const DebugPanel = () => {
                 onPress={() => setIsVisible(true)}
                 onLongPress={() => networkLogger.clearLogs()}
             >
-                <Text style={styles.buttonText}>DEBUG</Text>
+                <Text style={styles.buttonText}>{t('debug.button')}</Text>
             </TouchableOpacity>
         );
     }
@@ -64,85 +65,127 @@ export const DebugPanel = () => {
         <Modal visible={isVisible} animationType="slide">
             <SafeAreaView style={styles.container}>
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Debug Panel</Text>
+                    <Text style={styles.headerTitle}>{t('debug.panelTitle')}</Text>
                     <TouchableOpacity onPress={() => setIsVisible(false)} style={styles.closeButton}>
-                        <Text style={styles.closeButtonText}>Close</Text>
+                        <Text style={styles.closeButtonText}>{t('debug.close')}</Text>
                     </TouchableOpacity>
                 </View>
 
                 <ScrollView style={styles.content}>
                     <View style={styles.configSection}>
-                        <Text style={styles.sectionTitle}>API Configuration</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={apiUrl}
-                            onChangeText={setApiUrlState}
-                            placeholder="API URL"
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                        />
-                        <View style={styles.configButtons}>
-                            <TouchableOpacity onPress={testConnection} style={styles.testButton}>
-                                <Text style={styles.testButtonText}>Test Connection</Text>
+                        <Text style={styles.sectionTitle}>{t('debug.language')}</Text>
+                        <View style={styles.quickButtons}>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setLocale('en');
+                                    Alert.alert(t('common.success'), 'Language set to English. Please restart the app.');
+                                }}
+                                style={[styles.quickButton, getCurrentLocale() === 'en' && styles.activeQuickButton]}
+                            >
+                                <Text style={[styles.quickButtonText, getCurrentLocale() === 'en' && styles.activeQuickButtonText]}>
+                                    {t('debug.english')}
+                                </Text>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={handleSaveUrl} style={styles.saveButton}>
-                                <Text style={styles.saveButtonText}>Save & Restart</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={handleResetUrl} style={styles.resetButton}>
-                                <Text style={styles.resetButtonText}>Reset</Text>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setLocale('es');
+                                    Alert.alert(t('common.success'), 'Idioma cambiado a Español. Reinicia la app.');
+                                }}
+                                style={[styles.quickButton, getCurrentLocale() === 'es' && styles.activeQuickButton]}
+                            >
+                                <Text style={[styles.quickButtonText, getCurrentLocale() === 'es' && styles.activeQuickButtonText]}>
+                                    {t('debug.spanish')}
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
                     <View style={styles.configSection}>
-                        <Text style={styles.sectionTitle}>Time Travel (Day Simulation)</Text>
-                        <Text style={styles.infoText}>Current simulated date: {dateService.getToday()}</Text>
+                        <Text style={styles.sectionTitle}>{t('debug.apiConfig')}</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={apiUrl}
+                            onChangeText={setApiUrlState}
+                            placeholder={t('debug.apiUrl')}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                        />
+                        <View style={styles.quickButtons}>
+                            <TouchableOpacity
+                                onPress={() => setApiUrlState(LOCAL_API_URL)}
+                                style={styles.quickButton}
+                            >
+                                <Text style={styles.quickButtonText}>{t('debug.localIp')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setApiUrlState(PROD_API_URL)}
+                                style={styles.quickButton}
+                            >
+                                <Text style={styles.quickButtonText}>{t('debug.production')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.configButtons}>
+                            <TouchableOpacity onPress={testConnection} style={styles.testButton}>
+                                <Text style={styles.testButtonText}>{t('debug.testConnection')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleSaveUrl} style={styles.saveButton}>
+                                <Text style={styles.saveButtonText}>{t('debug.saveRestart')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleResetUrl} style={styles.resetButton}>
+                                <Text style={styles.resetButtonText}>{t('debug.reset')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    <View style={styles.configSection}>
+                        <Text style={styles.sectionTitle}>{t('debug.timeTravel')}</Text>
+                        <Text style={styles.infoText}>{t('debug.simulatedDate', { date: dateService.getToday() })}</Text>
                         <View style={styles.dateButtons}>
                             <TouchableOpacity onPress={() => handleSetDateOffset(dateOffset - 1)} style={styles.dateButton}>
-                                <Text style={styles.dateButtonText}>-1 Day</Text>
+                                <Text style={styles.dateButtonText}>{t('debug.minusDay')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={() => handleSetDateOffset(0)} style={[styles.dateButton, styles.resetDateButton]}>
-                                <Text style={styles.dateButtonText}>Today</Text>
+                                <Text style={styles.dateButtonText}>{t('debug.today')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={() => handleSetDateOffset(dateOffset + 1)} style={styles.dateButton}>
-                                <Text style={styles.dateButtonText}>+1 Day</Text>
+                                <Text style={styles.dateButtonText}>{t('debug.plusDay')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
                     <View style={styles.logsHeader}>
-                        <Text style={styles.sectionTitle}>Network Logs</Text>
+                        <Text style={styles.sectionTitle}>{t('debug.networkLogs')}</Text>
                         <TouchableOpacity onPress={() => networkLogger.clearLogs()}>
-                            <Text style={styles.clearButtonText}>Clear Logs</Text>
+                            <Text style={styles.clearButtonText}>{t('debug.clearLogs')}</Text>
                         </TouchableOpacity>
                     </View>
 
                     {logs.length === 0 ? (
-                        <Text style={styles.emptyText}>No logs yet</Text>
+                        <Text style={styles.emptyText}>{t('debug.noLogs')}</Text>
                     ) : (
                         logs.map((log) => (
                             <View key={log.id} style={[styles.logItem, log.error || (log.status && log.status >= 400) ? styles.logError : null]}>
                                 <View style={styles.logHeader}>
                                     <Text style={styles.method}>{log.method}</Text>
-                                    <Text style={styles.status}>{log.status || 'PENDING'}</Text>
+                                    <Text style={styles.status}>{log.status || t('debug.pending')}</Text>
                                     <Text style={styles.timestamp}>{new Date(log.timestamp).toLocaleTimeString()}</Text>
                                 </View>
                                 <Text style={styles.url}>{log.url}</Text>
                                 {log.requestBody && (
                                     <View style={styles.bodyContainer}>
-                                        <Text style={styles.bodyLabel}>Request:</Text>
+                                        <Text style={styles.bodyLabel}>{t('debug.request')}</Text>
                                         <Text style={styles.bodyText}>{JSON.stringify(log.requestBody, null, 2)}</Text>
                                     </View>
                                 )}
                                 {log.responseBody && (
                                     <View style={styles.bodyContainer}>
-                                        <Text style={styles.bodyLabel}>Response:</Text>
+                                        <Text style={styles.bodyLabel}>{t('debug.response')}</Text>
                                         <Text style={styles.bodyText}>{JSON.stringify(log.responseBody, null, 2)}</Text>
                                     </View>
                                 )}
                                 {log.error && (
                                     <View style={styles.bodyContainer}>
-                                        <Text style={styles.errorLabel}>Error:</Text>
+                                        <Text style={styles.errorLabel}>{t('debug.errorLabel')}</Text>
                                         <Text style={styles.errorText}>{log.error}</Text>
                                     </View>
                                 )}
@@ -241,6 +284,31 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: 'monospace',
         marginBottom: 8,
+    },
+    quickButtons: {
+        flexDirection: 'row',
+        marginBottom: 12,
+    },
+    quickButton: {
+        backgroundColor: '#f2f2f7',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        marginRight: 8,
+        borderWidth: 1,
+        borderColor: '#d1d1d6',
+    },
+    quickButtonText: {
+        fontSize: 11,
+        color: '#007aff',
+        fontWeight: '600',
+    },
+    activeQuickButton: {
+        backgroundColor: '#007aff',
+        borderColor: '#007aff',
+    },
+    activeQuickButtonText: {
+        color: '#fff',
     },
     configButtons: {
         flexDirection: 'row',

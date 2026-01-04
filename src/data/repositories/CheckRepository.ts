@@ -39,11 +39,12 @@ export const CheckRepository = {
             // Sync with server
             const userId = await UserRepository.getUserId();
             // Fire and forget for MVP speed
+            const { id: _, ...syncData } = check;
             fetch(`${Config.API_URL}/checks`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...check,
+                    ...syncData,
                     userId
                 })
             }).catch(e => console.error('Background sync failed', e));

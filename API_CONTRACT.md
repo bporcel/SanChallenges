@@ -6,6 +6,7 @@ POST /challenges/join
 GET /challenges/{id}
 POST /checks
 GET /challenges/{id}/ranking
+DELETE /challenges/{id}/participants/{userId}
 
 ## Notas
 - userId enviado desde cliente

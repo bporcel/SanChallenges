@@ -10,6 +10,8 @@ import { Card } from '../src/ui/components/Card';
 import { colors } from '../src/ui/theme/colors';
 import { spacing, layout } from '../src/ui/theme/spacing';
 import { typography } from '../src/ui/theme/typography';
+import { LoadingOverlay } from '../src/ui/components/LoadingOverlay';
+import { t } from '../src/i18n/i18n';
 
 export default function CreateChallengeScreen() {
     const router = useRouter();
@@ -21,7 +23,7 @@ export default function CreateChallengeScreen() {
     const [loading, setLoading] = useState(false);
     const handleCreate = async () => {
         if (!title) {
-            Alert.alert('Error', 'Title is required');
+            Alert.alert(t('common.error'), t('create.errorTitleRequired'));
             return;
         }
 
@@ -36,7 +38,7 @@ export default function CreateChallengeScreen() {
             await ChallengeRepository.create(newChallenge);
             router.back();
         } catch (e: any) {
-            Alert.alert('Error', e.message || 'Failed to create challenge');
+            Alert.alert(t('common.error'), e.message || t('create.errorFailed'));
             setLoading(false);
         }
     };
@@ -62,31 +64,31 @@ export default function CreateChallengeScreen() {
                             >
                                 <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
                             </TouchableOpacity>
-                            <Text style={styles.headerTitle}>New Challenge</Text>
+                            <Text style={styles.headerTitle}>{t('create.title')}</Text>
                             <View style={{ width: 44 }} />
                         </View>
-                        <Text style={styles.headerSubtitle}>Set a goal and track your progress</Text>
+                        <Text style={styles.headerSubtitle}>{t('create.subtitle')}</Text>
                     </View>
 
                     <Card style={styles.formCard}>
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Title</Text>
+                            <Text style={styles.label}>{t('create.labelTitle')}</Text>
                             <TextInput
                                 style={styles.input}
                                 value={title}
                                 onChangeText={setTitle}
-                                placeholder="e.g., Drink Water"
+                                placeholder={t('create.placeholderTitle')}
                                 placeholderTextColor={colors.text.tertiary}
                             />
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Description (Optional)</Text>
+                            <Text style={styles.label}>{t('create.labelDescription')}</Text>
                             <TextInput
                                 style={[styles.input, styles.textArea]}
                                 value={description}
                                 onChangeText={setDescription}
-                                placeholder="e.g., 2 Liters a day"
+                                placeholder={t('create.placeholderDescription')}
                                 placeholderTextColor={colors.text.tertiary}
                                 multiline
                                 numberOfLines={3}
@@ -94,28 +96,28 @@ export default function CreateChallengeScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Points Reward</Text>
+                            <Text style={styles.label}>{t('create.labelPoints')}</Text>
                             <TextInput
                                 style={styles.input}
                                 value={points}
                                 onChangeText={setPoints}
-                                placeholder="e.g., 10"
+                                placeholder={t('create.placeholderPoints')}
                                 placeholderTextColor={colors.text.tertiary}
                                 keyboardType="numeric"
                             />
-                            <Text style={styles.helperText}>Points earned for each completion</Text>
+                            <Text style={styles.helperText}>{t('create.helperPoints')}</Text>
                         </View>
 
                         <View style={styles.buttonGroup}>
                             <Button
-                                title={loading ? "Creating..." : "Create Challenge"}
+                                title={loading ? t('create.creating') : t('create.createButton')}
                                 onPress={handleCreate}
                                 disabled={loading}
                                 size="large"
                                 style={styles.createButton}
                             />
                             <Button
-                                title="Cancel"
+                                title={t('common.cancel')}
                                 variant="ghost"
                                 onPress={() => router.back()}
                                 disabled={loading}
@@ -124,6 +126,7 @@ export default function CreateChallengeScreen() {
                     </Card>
                 </ScrollView>
             </KeyboardAvoidingView>
+            <LoadingOverlay visible={loading} />
         </SafeAreaView>
     );
 }
