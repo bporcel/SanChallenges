@@ -92,6 +92,7 @@ export const es = {
         connectionFailed: 'Error de conexión',
         reachError: 'No se pudo contactar con {{url}}. Error: {{error}}',
         dateOffsetSet: 'Desfase de fecha establecido en {{offset}} días. La app está ahora en {{date}}.',
+        languageChanged: 'Idioma cambiado a Español. Reinicia la app.',
     },
     editName: {
         title: 'Cambiar nombre',

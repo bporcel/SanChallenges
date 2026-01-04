@@ -92,6 +92,7 @@ export const en = {
         connectionFailed: 'Connection Failed',
         reachError: 'Could not reach {{url}}. Error: {{error}}',
         dateOffsetSet: 'Date offset set to {{offset}} days. App is now in {{date}}.',
+        languageChanged: 'Language set to English. Please restart the app.',
     },
     editName: {
         title: 'Change Name',

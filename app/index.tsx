@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, Alert, LayoutAnimation, Platform, Tou
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Crypto from 'expo-crypto';
 import { ChallengeRepository } from '../src/data/repositories/ChallengeRepository';
 import { CheckRepository } from '../src/data/repositories/CheckRepository';
 import { Challenge } from '../src/domain/models/Challenge';
@@ -43,8 +44,11 @@ export default function HomeScreen() {
         const currentStreaks: Record<string, number> = {};
         let points = 0;
 
+        // Optimization: Fetch all checks once
+        const allChecks = await CheckRepository.getAll();
+
         for (const challenge of allChallenges) {
-            const challengeChecks = await CheckRepository.getByChallengeId(challenge.id);
+            const challengeChecks = allChecks.filter(c => c.challengeId === challenge.id);
             const isChecked = challengeChecks.some((c) => c.date === today && c.completed);
             checks[challenge.id] = isChecked;
 
@@ -75,7 +79,7 @@ export default function HomeScreen() {
         const today = dateService.getToday();
 
         await CheckRepository.create({
-            id: Math.random().toString(36).substr(2, 9),
+            id: Crypto.randomUUID(),
             challengeId,
             date: today,
             completed: !isChecked,
@@ -111,42 +115,43 @@ export default function HomeScreen() {
 
     const renderItem = ({ item }: { item: Challenge }) => (
         <Card style={styles.item}>
-            <View style={styles.itemHeader}>
-                <View style={styles.itemInfo}>
+            <View style={styles.cardMain}>
+                <View style={styles.titleRow}>
                     <Text style={styles.title}>{item.title}</Text>
-                    {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
+                    <View style={styles.pointsBadge}>
+                        <Text style={styles.pointsText}>{item.points} {t('common.pts')}</Text>
+                    </View>
                 </View>
-                <View style={styles.pointsBadge}>
-                    <Text style={styles.pointsText}>{item.points} pts</Text>
-                </View>
+                {item.description ? (
+                    <Text style={styles.description}>{item.description}</Text>
+                ) : null}
             </View>
 
-            <View style={styles.itemFooter}>
-                <View style={styles.streakContainer}>
-                    <Text style={styles.streakText}>
-                        {streaks[item.id] > 0
-                            ? t('home.streak', { count: streaks[item.id] })
-                            : t('home.noStreak')}
-                    </Text>
-                    <Text style={styles.inviteCodeSubtle}> • {t('home.code', { code: item.inviteCode })}</Text>
-                </View>
-                <View style={styles.actions}>
-                    <Button
-                        title={t('common.delete')}
-                        variant="ghost"
-                        size="small"
-                        onPress={() => handleDelete(item.id)}
-                        style={styles.deleteButton}
-                        textStyle={{ color: colors.status.error }}
-                    />
-                    <Button
-                        title={checkedToday[item.id] ? t('common.undo') : t('common.check')}
-                        variant={checkedToday[item.id] ? 'secondary' : 'primary'}
-                        size="small"
-                        onPress={() => handleCheck(item.id)}
-                        style={styles.checkButton}
-                    />
-                </View>
+            <View style={styles.cardStats}>
+                <Text style={styles.streakText}>
+                    {streaks[item.id] > 0
+                        ? t('home.streak', { count: streaks[item.id] })
+                        : t('home.noStreak')}
+                </Text>
+                <Text style={styles.inviteCodeSubtle}>{t('home.code', { code: item.inviteCode })}</Text>
+            </View>
+
+            <View style={styles.cardActions}>
+                <Button
+                    title={t('common.delete')}
+                    variant="ghost"
+                    size="small"
+                    onPress={() => handleDelete(item.id)}
+                    style={styles.deleteButton}
+                    textStyle={{ color: colors.status.error }}
+                />
+                <Button
+                    title={checkedToday[item.id] ? t('common.undo') : t('common.check')}
+                    variant={checkedToday[item.id] ? 'secondary' : 'primary'}
+                    size="small"
+                    onPress={() => handleCheck(item.id)}
+                    style={styles.checkButton}
+                />
             </View>
         </Card>
     );
@@ -234,6 +239,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        gap: spacing.s,
     },
     greeting: {
         ...typography.h2,
@@ -243,6 +249,7 @@ const styles = StyleSheet.create({
     userNameContainer: {
         flexDirection: 'row',
         alignItems: 'baseline',
+        flexWrap: 'wrap',
     },
     userName: {
         ...typography.h2,
@@ -280,9 +287,54 @@ const styles = StyleSheet.create({
         color: colors.primary,
         fontWeight: 'bold',
     },
-    streakContainer: {
+    list: {
+        padding: spacing.m,
+    },
+    item: {
+        marginBottom: spacing.m,
+        padding: spacing.m,
+    },
+    cardMain: {
+        marginBottom: spacing.s,
+    },
+    titleRow: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: spacing.s,
+        marginBottom: spacing.xs,
+    },
+    title: {
+        ...typography.h3,
+        color: colors.text.primary,
+        flex: 1,
+    },
+    pointsBadge: {
+        backgroundColor: colors.primaryLight,
+        paddingHorizontal: spacing.s,
+        paddingVertical: 2,
+        borderRadius: layout.borderRadius.s,
+        alignSelf: 'flex-start',
+    },
+    pointsText: {
+        ...typography.caption,
+        color: colors.text.inverse,
+        fontWeight: 'bold',
+    },
+    description: {
+        ...typography.bodySmall,
+        color: colors.text.secondary,
+    },
+    cardStats: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: spacing.xs,
+        paddingVertical: spacing.s,
+        borderTopWidth: 1,
+        borderTopColor: colors.border + '40',
+        marginTop: spacing.s,
     },
     streakText: {
         ...typography.bodySmall,
@@ -292,64 +344,18 @@ const styles = StyleSheet.create({
     inviteCodeSubtle: {
         ...typography.caption,
         color: colors.text.tertiary,
-        fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
     },
-    list: {
-        padding: spacing.m,
-    },
-    item: {
-        marginBottom: spacing.m,
-    },
-    itemHeader: {
+    cardActions: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: spacing.s,
-    },
-    itemInfo: {
-        flex: 1,
-        marginRight: spacing.m,
-    },
-    title: {
-        ...typography.h3,
-        color: colors.text.primary,
-        marginBottom: spacing.xs,
-    },
-    description: {
-        ...typography.bodySmall,
-        color: colors.text.secondary,
-    },
-    pointsBadge: {
-        backgroundColor: colors.primaryLight,
-        paddingHorizontal: spacing.s,
-        paddingVertical: spacing.xs,
-        borderRadius: layout.borderRadius.m,
-    },
-    pointsText: {
-        ...typography.caption,
-        color: colors.text.inverse,
-        fontWeight: 'bold',
-    },
-    itemFooter: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: spacing.s,
         marginTop: spacing.s,
     },
-    inviteCode: {
-        ...typography.caption,
-        color: colors.text.tertiary,
-        fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
-    },
-    actions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
     deleteButton: {
-        marginRight: spacing.s,
+        paddingHorizontal: spacing.s,
     },
     checkButton: {
-        minWidth: 80,
+        minWidth: 100,
     },
     emptyContainer: {
         alignItems: 'center',

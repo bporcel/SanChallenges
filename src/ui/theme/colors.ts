@@ -31,5 +31,13 @@ export const colors = {
         gold: '#FBBF24', // Amber 400
         silver: '#94A3B8', // Slate 400
         bronze: '#B45309', // Amber 700
+    },
+
+    tiers: {
+        legend: '#8B5CF6', // Purple
+        elite: '#EF4444', // Red
+        pro: '#F59E0B', // Amber
+        active: '#10B981', // Emerald
+        beginner: '#6B7280', // Gray
     }
 };

@@ -78,7 +78,7 @@ export const DebugPanel = () => {
                             <TouchableOpacity
                                 onPress={() => {
                                     setLocale('en');
-                                    Alert.alert(t('common.success'), 'Language set to English. Please restart the app.');
+                                    Alert.alert(t('common.success'), t('debug.languageChanged'));
                                 }}
                                 style={[styles.quickButton, getCurrentLocale() === 'en' && styles.activeQuickButton]}
                             >
@@ -89,7 +89,7 @@ export const DebugPanel = () => {
                             <TouchableOpacity
                                 onPress={() => {
                                     setLocale('es');
-                                    Alert.alert(t('common.success'), 'Idioma cambiado a Español. Reinicia la app.');
+                                    Alert.alert(t('common.success'), t('debug.languageChanged'));
                                 }}
                                 style={[styles.quickButton, getCurrentLocale() === 'es' && styles.activeQuickButton]}
                             >

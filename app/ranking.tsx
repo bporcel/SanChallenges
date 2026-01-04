@@ -45,7 +45,9 @@ export default function RankingScreen() {
             setChallenges(allChallenges);
 
             const newRankings: Record<string, UserRanking[]> = {};
-            for (const challenge of allChallenges) {
+
+            // Optimization: Fetch rankings in parallel
+            const rankingPromises = allChallenges.map(async (challenge) => {
                 try {
                     const ranking = await CheckRepository.getRanking(challenge.id);
                     // Calculate total points
@@ -53,11 +55,21 @@ export default function RankingScreen() {
                         ...r,
                         totalPoints: r.count * (challenge.points || 0)
                     }));
-                    newRankings[challenge.id] = rankingWithPoints;
+                    return { challengeId: challenge.id, ranking: rankingWithPoints };
                 } catch (e) {
                     console.error(`Failed to load ranking for ${challenge.id}`, e);
+                    return { challengeId: challenge.id, ranking: [] };
+                }
+            });
+
+            const results = await Promise.all(rankingPromises);
+
+            for (const result of results) {
+                if (result.ranking.length > 0) {
+                    newRankings[result.challengeId] = result.ranking;
                 }
             }
+
             setRankings(newRankings);
         } finally {
             setIsLoading(false);
@@ -123,23 +135,26 @@ export default function RankingScreen() {
                         {getRankIcon(rank)}
                     </Text>
                 </View>
-                <View style={styles.userInfo}>
-                    <View>
+                <View style={styles.rankingMain}>
+                    <View style={styles.userInfo}>
                         <Text style={[
                             styles.userId,
                             isCurrentUser && styles.currentUserText
                         ]}>
                             {displayName}
                         </Text>
+                        {isCurrentUser && <Text style={styles.youBadge}>{t('ranking.you')}</Text>}
                     </View>
-                    {isCurrentUser && <Text style={styles.youBadge}>{t('ranking.you')}</Text>}
-                </View>
-                <View style={styles.statsContainer}>
-                    <Text style={styles.points}>{item.totalPoints} {t('common.pts')}</Text>
-                    {pointDiff !== null && pointDiff > 0 && (
-                        <Text style={styles.pointDiff}>{t('ranking.toNext', { diff: pointDiff })}</Text>
-                    )}
-                    <Text style={styles.checks}>{item.count} {t('ranking.checks')}</Text>
+
+                    <View style={styles.statsContainer}>
+                        <View style={styles.pointsRow}>
+                            <Text style={styles.points}>{item.totalPoints} {t('common.pts')}</Text>
+                            <Text style={styles.checks}> • {item.count} {t('ranking.checks')}</Text>
+                        </View>
+                        {pointDiff !== null && pointDiff > 0 && (
+                            <Text style={styles.pointDiff}>{t('ranking.toNext', { diff: pointDiff })}</Text>
+                        )}
+                    </View>
                 </View>
             </View>
         );
@@ -260,11 +275,14 @@ const styles = StyleSheet.create({
     rankNumber: {
         fontWeight: 'bold',
     },
-    userInfo: {
+    rankingMain: {
         flex: 1,
+        marginLeft: spacing.s,
+    },
+    userInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginLeft: spacing.s,
+        flexWrap: 'wrap',
     },
     userId: {
         ...typography.body,
@@ -282,7 +300,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     statsContainer: {
-        alignItems: 'flex-end',
+        marginTop: 2,
+    },
+    pointsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     points: {
         ...typography.bodySmall,
@@ -297,6 +319,7 @@ const styles = StyleSheet.create({
         fontSize: 9,
         color: colors.text.tertiary,
         fontStyle: 'italic',
+        marginTop: 1,
     },
     noData: {
         ...typography.body,

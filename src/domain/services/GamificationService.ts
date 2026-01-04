@@ -1,6 +1,7 @@
 import { Check } from '../models/Check';
 import { dateService } from '../../data/DateService';
 import { t } from '../../i18n/i18n';
+import { colors } from '../../ui/theme/colors';
 
 export const GamificationService = {
     calculateStreak(checks: Check[]): number {
@@ -44,10 +45,10 @@ export const GamificationService = {
     },
 
     getRankTier(points: number): { label: string; color: string } {
-        if (points >= 1000) return { label: t('ranks.legend'), color: '#8B5CF6' }; // Purple
-        if (points >= 500) return { label: t('ranks.elite'), color: '#EF4444' }; // Red
-        if (points >= 200) return { label: t('ranks.pro'), color: '#F59E0B' }; // Amber
-        if (points >= 50) return { label: t('ranks.active'), color: '#10B981' }; // Emerald
-        return { label: t('ranks.beginner'), color: '#6B7280' }; // Gray
+        if (points >= 1000) return { label: t('ranks.legend'), color: colors.tiers.legend };
+        if (points >= 500) return { label: t('ranks.elite'), color: colors.tiers.elite };
+        if (points >= 200) return { label: t('ranks.pro'), color: colors.tiers.pro };
+        if (points >= 50) return { label: t('ranks.active'), color: colors.tiers.active };
+        return { label: t('ranks.beginner'), color: colors.tiers.beginner };
     }
 };
