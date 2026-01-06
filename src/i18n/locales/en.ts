@@ -10,6 +10,7 @@ export const en = {
         pts: 'aura',
         undo: 'Undo',
         check: 'Check',
+        day: 'Day {{current}} / {{total}}',
     },
     home: {
         greeting: 'Hello, ',
@@ -66,6 +67,18 @@ export const en = {
         you: '(You)',
         checks: 'checks',
         toNext: '-{{diff}} to next',
+        up: 'You moved up {{count}} positions! 🎉',
+        down: 'You moved down {{count}} positions',
+    },
+    social: {
+        none: 'No one has checked today yet',
+        one: '{{name}} already checked today',
+        two: '{{name1}} and {{name2}} already checked today',
+        many: '{{name1}}, {{name2}} and {{count}} more already checked today',
+    },
+    streak: {
+        broken: 'Broken',
+        days: '{{count}} days',
     },
     debug: {
         button: 'DEBUG',
@@ -101,6 +114,12 @@ export const en = {
         reachError: 'Could not reach {{url}}. Error: {{error}}',
         dateOffsetSet: 'Date offset set to {{offset}} days. App is now in {{date}}.',
         languageChanged: 'Language set to English. Please restart the app.',
+        rankingCleared: 'Ranking history cleared',
+        noRankingHistory: 'No ranking history to clear',
+        rankingClearFailed: 'Failed to clear ranking history',
+        resetAllTitle: 'Reset All Data',
+        resetAllMessage: 'Are you sure you want to clear all local data? This cannot be undone.',
+        resetAllSuccess: 'All data cleared. Please restart the app.',
     },
     editName: {
         title: 'Change Name',

@@ -4,6 +4,7 @@ import { ProgressBar } from './ProgressBar';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
+import { t } from '../../i18n/i18n';
 
 interface GoalProgressProps {
     currentDay: number;
@@ -23,7 +24,7 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({ currentDay, totalDay
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.label}>Día {currentDay} / {totalDays}</Text>
+                <Text style={styles.label}>{t('common.day', { current: currentDay, total: totalDays })}</Text>
                 <Text style={styles.percentage}>{Math.round(progress * 100)}%</Text>
             </View>
             <ProgressBar progress={progress} color={getProgressColor()} />

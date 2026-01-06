@@ -54,7 +54,7 @@ export const CheckRepository = {
         }
     },
 
-    async getRanking(challengeId: string): Promise<{ userId: string, count: number }[]> {
+    async getRanking(challengeId: string): Promise<{ userId: string, count: number, displayName?: string, previousRank?: number | null }[]> {
         try {
             const response = await fetch(`${Config.API_URL}/challenges/${challengeId}/ranking`);
             if (response.ok) {

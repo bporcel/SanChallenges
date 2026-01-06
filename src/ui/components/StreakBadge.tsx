@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Animated } from 'react-native';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
+import { t } from '../../i18n/i18n';
 
 interface StreakBadgeProps {
     streak: number;
@@ -84,7 +85,7 @@ export const StreakBadge: React.FC<StreakBadgeProps> = ({ streak, isBroken = fal
         >
             <Text style={styles.icon}>{style.icon}</Text>
             <Text style={[styles.text, { color: style.color }]}>
-                {isBroken ? 'Roto' : `${streak} días`}
+                {isBroken ? t('streak.broken') : t('streak.days', { count: streak })}
             </Text>
         </Animated.View>
     );

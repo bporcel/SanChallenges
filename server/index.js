@@ -234,48 +234,84 @@ app.get('/challenges/:id/ranking', async (req, res) => {
             where: { challengeId: id },
             select: { userId: true }
         });
-        const participantIds = new Set(participants.map(p => p.userId));
+        const participantIds = Array.from(new Set(participants.map(p => p.userId)));
 
-        // Group by user and count completed checks
-        const ranking = await prisma.check.groupBy({
+        // 1. Current Ranking (all time)
+        const currentRanking = await prisma.check.groupBy({
             by: ['userId'],
             where: {
                 challengeId: id,
                 completed: true,
-                userId: { in: Array.from(participantIds) }
+                userId: { in: participantIds }
             },
-            _count: {
-                userId: true
-            },
-            orderBy: {
-                _count: {
-                    userId: 'desc'
-                }
-            }
+            _count: { userId: true },
+            orderBy: { _count: { userId: 'desc' } }
         });
 
+        // 2. Previous Ranking (up to yesterday)
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        const previousRanking = await prisma.check.groupBy({
+            by: ['userId'],
+            where: {
+                challengeId: id,
+                completed: true,
+                userId: { in: participantIds },
+                date: { lt: new Date().toISOString().split('T')[0] } // All checks before today
+            },
+            _count: { userId: true },
+            orderBy: { _count: { userId: 'desc' } }
+        });
+
+        // Helper to get rank from a grouped result (handles ties)
+        const getRankMap = (ranking) => {
+            const map = {};
+            ranking.forEach((r, index) => {
+                let rank = 1;
+                for (let i = 0; i < index; i++) {
+                    if (ranking[i]._count.userId > r._count.userId) {
+                        rank++;
+                    }
+                }
+                map[r.userId] = rank;
+            });
+            return map;
+        };
+
+        const currentRankMap = getRankMap(currentRanking);
+        const previousRankMap = getRankMap(previousRanking);
+
         // Fetch user details
-        const userIds = ranking.map(r => r.userId);
         const users = await prisma.user.findMany({
-            where: { id: { in: userIds } }
+            where: { id: { in: participantIds } }
         });
         const userMap = new Map(users.map(u => [u.id, u]));
 
-        const result = ranking.map(r => {
-            const user = userMap.get(r.userId);
-            let displayName = user?.displayName;
+        // Build final result
+        // We iterate over participantIds to include everyone, even those with 0 checks
+        const result = participantIds.map(userId => {
+            const user = userMap.get(userId);
+            const currentStats = currentRanking.find(r => r.userId === userId);
+            const count = currentStats ? currentStats._count.userId : 0;
 
-            // Fallback logic consistent with client
+            let displayName = user?.displayName;
             if (!displayName || displayName === 'Unknown User' || displayName === 'Unknown') {
-                displayName = `User ${r.userId.substr(0, 6)}...`;
+                displayName = `User ${userId.substr(0, 6)}...`;
             }
 
             return {
-                userId: r.userId,
-                count: r._count.userId,
-                displayName
+                userId,
+                count,
+                displayName,
+                currentRank: currentRankMap[userId] || (currentRanking.length + 1),
+                previousRank: previousRankMap[userId] || (previousRanking.length + 1)
             };
         });
+
+        // Sort by count desc
+        result.sort((a, b) => b.count - a.count);
 
         res.json(result);
     } catch (e) {

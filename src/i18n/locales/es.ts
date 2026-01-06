@@ -10,6 +10,7 @@ export const es = {
         pts: 'aura',
         undo: 'Deshacer',
         check: 'Hecho',
+        day: 'Día {{current}} / {{total}}',
     },
     home: {
         greeting: 'Hola, ',
@@ -66,6 +67,18 @@ export const es = {
         you: '(Tú)',
         checks: 'veces',
         toNext: '-{{diff}} para el siguiente',
+        up: '¡Subiste {{count}} posiciones! 🎉',
+        down: 'Bajaste {{count}} posiciones',
+    },
+    social: {
+        none: 'Nadie ha marcado hoy aún',
+        one: '{{name}} ya marcó hoy',
+        two: '{{name1}} y {{name2}} ya marcaron hoy',
+        many: '{{name1}}, {{name2}} y {{count}} más ya marcaron hoy',
+    },
+    streak: {
+        broken: 'Roto',
+        days: '{{count}} días',
     },
     debug: {
         button: 'DEBUG',
@@ -101,6 +114,12 @@ export const es = {
         reachError: 'No se pudo contactar con {{url}}. Error: {{error}}',
         dateOffsetSet: 'Desfase de fecha establecido en {{offset}} días. La app está ahora en {{date}}.',
         languageChanged: 'Idioma cambiado a Español. Reinicia la app.',
+        rankingCleared: 'Historial de ranking limpiado',
+        noRankingHistory: 'No hay historial de ranking para limpiar',
+        rankingClearFailed: 'Error al limpiar el historial de ranking',
+        resetAllTitle: 'Restablecer todos los datos',
+        resetAllMessage: '¿Estás seguro de que quieres borrar todos los datos locales? Esto no se puede deshacer.',
+        resetAllSuccess: 'Todos los datos han sido borrados. Por favor, reinicia la app.',
     },
     editName: {
         title: 'Cambiar nombre',

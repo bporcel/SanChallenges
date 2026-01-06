@@ -27,6 +27,7 @@ interface UserRanking {
     totalAura: number;
     displayName?: string;
     previousRank?: number | null;
+    currentRank?: number;
 }
 
 interface RankChange {
@@ -60,43 +61,22 @@ export default function RankingScreen() {
             const rankingPromises = allChallenges.map(async (challenge) => {
                 try {
                     const ranking = await CheckRepository.getRanking(challenge.id);
-                    // Calculate total points
-                    const rankingWithAura = ranking.map(r => ({
+
+                    // Calculate total aura for each user
+                    const rankingsWithAura: UserRanking[] = ranking.map(r => ({
                         ...r,
                         totalAura: r.count * (challenge.points || 0)
                     }));
 
-                    // Load previous rankings from storage
-                    const storageKey = `previous_rankings_${challenge.id}`;
-                    const previousRankingsJson = await AsyncStorage.getItem(storageKey);
-                    const previousRankings: Record<string, number> = previousRankingsJson
-                        ? JSON.parse(previousRankingsJson)
-                        : {};
-
-                    // Attach previous ranks
-                    const rankingsWithChanges = rankingWithAura.map((r: UserRanking, index: number) => {
-                        // Calculate current rank (handle ties)
-                        let currentRank = 1;
-                        for (let i = 0; i < index; i++) {
-                            if (rankingWithAura[i].totalAura > r.totalAura) {
-                                currentRank++;
-                            }
-                        }
-
-                        return {
-                            ...r,
-                            previousRank: previousRankings[r.userId] || null
-                        };
-                    });
-
-                    // Check if current user's rank changed
+                    // Check if current user's rank changed for the notification message
                     if (user) {
-                        const userRanking = rankingsWithChanges.find(r => r.userId === user.id);
-                        if (userRanking && userRanking.previousRank !== null) {
+                        const userRanking = rankingsWithAura.find(r => r.userId === user.id);
+                        if (userRanking && userRanking.previousRank !== undefined && userRanking.previousRank !== null) {
+                            // Calculate current rank (handles ties)
                             let currentRank = 1;
-                            const userIndex = rankingsWithChanges.indexOf(userRanking);
+                            const userIndex = rankingsWithAura.indexOf(userRanking);
                             for (let i = 0; i < userIndex; i++) {
-                                if (rankingsWithChanges[i].totalAura > userRanking.totalAura) {
+                                if (rankingsWithAura[i].totalAura > userRanking.totalAura) {
                                     currentRank++;
                                 }
                             }
@@ -111,20 +91,7 @@ export default function RankingScreen() {
                         }
                     }
 
-                    // Save current rankings for next time
-                    const currentRankMap: Record<string, number> = {};
-                    rankingsWithChanges.forEach((r: UserRanking, index: number) => {
-                        let rank = 1;
-                        for (let i = 0; i < index; i++) {
-                            if (rankingsWithChanges[i].totalAura > r.totalAura) {
-                                rank++;
-                            }
-                        }
-                        currentRankMap[r.userId] = rank;
-                    });
-                    await AsyncStorage.setItem(storageKey, JSON.stringify(currentRankMap));
-
-                    return { challengeId: challenge.id, ranking: rankingsWithChanges };
+                    return { challengeId: challenge.id, ranking: rankingsWithAura };
                 } catch (e) {
                     console.error(`Failed to load ranking for ${challenge.id}`, e);
                     return { challengeId: challenge.id, ranking: [] };
@@ -215,10 +182,10 @@ export default function RankingScreen() {
                         </Text>
                         {isCurrentUser && <Text style={styles.youBadge}>{t('ranking.you')}</Text>}
                         {/* Ranking change indicator */}
-                        {item.previousRank !== undefined && (
+                        {(item.previousRank !== undefined && item.previousRank !== null) && (
                             <RankingChangeIndicator
                                 previousRank={item.previousRank}
-                                currentRank={rank}
+                                currentRank={item.currentRank || rank}
                             />
                         )}
                     </View>
@@ -250,8 +217,8 @@ export default function RankingScreen() {
                             { color: rankChange.rankChange > 0 ? colors.status.success : colors.status.error }
                         ]}>
                             {rankChange.rankChange > 0
-                                ? `¡Subiste ${rankChange.rankChange} posiciones! 🎉`
-                                : `Bajaste ${Math.abs(rankChange.rankChange)} posiciones`
+                                ? t('ranking.up', { count: rankChange.rankChange })
+                                : t('ranking.down', { count: Math.abs(rankChange.rankChange) })
                             }
                         </Text>
                     </View>
@@ -376,12 +343,13 @@ const styles = StyleSheet.create({
     userInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        flexWrap: 'wrap',
+        gap: spacing.xs,
     },
     userId: {
         ...typography.body,
         color: colors.text.primary,
         fontWeight: '500',
+        flexShrink: 1,
     },
     currentUserText: {
         color: colors.primary,

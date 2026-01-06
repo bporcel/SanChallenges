@@ -10,3 +10,5 @@
 - 2026-01-06: Panel de Debug mejorado para testing de red y UX (haptics, celebraciones)
 - 2026-01-06: Contexto social en tarjetas (quién ha marcado hoy) con nombres reales
 - 2026-01-06: Generador de nombres por defecto con temática anime (Shadow Hokage, etc.)
+- 2026-01-06: Localización completa (i18n) para soporte de múltiples idiomas (ES/EN)
+- 2026-01-06: Cálculo de tendencia de ranking (subidas/bajadas) en el servidor para consistencia entre usuarios

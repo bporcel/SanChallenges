@@ -17,6 +17,8 @@
 - [x] Panel de Debug avanzado (UX & Network)
 - [x] Contexto social (quién ha marcado hoy)
 - [x] Nombres por defecto estilo anime (Shadow Hokage, etc.)
+- [x] Localización completa (EN/ES)
+- [x] Tendencia de ranking robusta (Server-side)
 
 ## Mejoras futuras
 

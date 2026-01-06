@@ -4,6 +4,7 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { CheckRepository } from '../../data/repositories/CheckRepository';
 import { dateService } from '../../data/DateService';
+import { t } from '../../i18n/i18n';
 
 interface SocialContextProps {
     challengeId: string;
@@ -26,13 +27,13 @@ export const SocialContext: React.FC<SocialContextProps> = ({
 
                 // Determine the message based on user names
                 if (userNames.length === 0) {
-                    setMessage('Nadie ha marcado hoy aún');
+                    setMessage(t('social.none'));
                 } else if (userNames.length === 1) {
-                    setMessage(`${userNames[0]} ya marcó hoy`);
+                    setMessage(t('social.one', { name: userNames[0] }));
                 } else if (userNames.length === 2) {
-                    setMessage(`${userNames[0]} y ${userNames[1]} ya marcaron hoy`);
+                    setMessage(t('social.two', { name1: userNames[0], name2: userNames[1] }));
                 } else {
-                    setMessage(`${userNames[0]}, ${userNames[1]} y ${userNames.length - 2} más ya marcaron hoy`);
+                    setMessage(t('social.many', { name1: userNames[0], name2: userNames[1], count: userNames.length - 2 }));
                 }
             } catch (error) {
                 console.error('Error loading social context:', error);

@@ -5,8 +5,8 @@ POST /challenges
 POST /challenges/join
 GET /challenges/{id}
 POST /checks
-GET /challenges/{id}/ranking
-GET /challenges/{id}/checks/today
+GET /challenges/{id}/ranking (returns currentRank and previousRank for tendency)
+GET /challenges/{id}/checks/today (returns userNames of participants who checked today)
 DELETE /challenges/{id}/participants/{userId}
 
 ## Notas

@@ -26,27 +26,27 @@ export const DebugPanel = () => {
             const rankingKeys = keys.filter(k => k.startsWith('previous_rankings_'));
             if (rankingKeys.length > 0) {
                 await AsyncStorage.multiRemove(rankingKeys);
-                Alert.alert(t('common.success'), 'Ranking history cleared');
+                Alert.alert(t('common.success'), t('debug.rankingCleared'));
             } else {
-                Alert.alert('Info', 'No ranking history to clear');
+                Alert.alert('Info', t('debug.noRankingHistory'));
             }
         } catch (e) {
-            Alert.alert('Error', 'Failed to clear ranking history');
+            Alert.alert(t('common.error'), t('debug.rankingClearFailed'));
         }
     };
 
     const handleResetAllData = () => {
         Alert.alert(
-            'Reset All Data',
-            'Are you sure you want to clear all local data? This cannot be undone.',
+            t('debug.resetAllTitle'),
+            t('debug.resetAllMessage'),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Reset',
+                    text: t('debug.reset'),
                     style: 'destructive',
                     onPress: async () => {
                         await AsyncStorage.clear();
-                        Alert.alert('Success', 'All data cleared. Please restart the app.');
+                        Alert.alert(t('common.success'), t('debug.resetAllSuccess'));
                     }
                 }
             ]
@@ -91,6 +91,8 @@ export const DebugPanel = () => {
     };
 
     if (!isVisible) {
+        if (!__DEV__) return null;
+
         return (
             <TouchableOpacity
                 style={styles.floatingButton}

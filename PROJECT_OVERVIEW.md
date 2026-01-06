@@ -15,6 +15,8 @@ Permitir que varios usuarios compartan y sigan retos comunes desde distintas ins
 - Duración de retos dinámica (configurable al crear)
 - Contexto social (ver quién ha marcado hoy por nombre)
 - Identidad automática estilo anime (Shadow Hokage, etc.)
+- Localización completa (EN/ES) con detección automática
+- Tendencia de ranking robusta (subidas/bajadas calculadas en servidor)
 
 ## Qué no hace
 - Login o autenticación formal
