@@ -9,6 +9,9 @@
 - Ranking por reto
 - Eliminar reto
 - Nombre de usuario editable
+- Retos privados (solo creador puede marcar)
+- Sistema de Aura con niveles anime
+- Configuración de duración del reto (en días)
 
 ## Requisitos no funcionales
 - Sin login

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Switch } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,7 +18,9 @@ export default function CreateChallengeScreen() {
     const insets = useSafeAreaInsets();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [points, setPoints] = useState('');
+    const [aura, setAura] = useState('');
+    const [duration, setDuration] = useState('30');
+    const [isPrivate, setIsPrivate] = useState(false);
 
     const [loading, setLoading] = useState(false);
     const handleCreate = async () => {
@@ -32,7 +34,9 @@ export default function CreateChallengeScreen() {
             const newChallenge = {
                 title,
                 description,
-                points: parseInt(points) || 0,
+                points: parseInt(aura) || 0,
+                duration: parseInt(duration) || 30,
+                isPrivate,
             };
 
             await ChallengeRepository.create(newChallenge);
@@ -99,13 +103,39 @@ export default function CreateChallengeScreen() {
                             <Text style={styles.label}>{t('create.labelPoints')}</Text>
                             <TextInput
                                 style={styles.input}
-                                value={points}
-                                onChangeText={setPoints}
+                                value={aura}
+                                onChangeText={setAura}
                                 placeholder={t('create.placeholderPoints')}
                                 placeholderTextColor={colors.text.tertiary}
                                 keyboardType="numeric"
                             />
                             <Text style={styles.helperText}>{t('create.helperPoints')}</Text>
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>{t('create.labelDuration')}</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={duration}
+                                onChangeText={setDuration}
+                                placeholder={t('create.placeholderDuration')}
+                                placeholderTextColor={colors.text.tertiary}
+                                keyboardType="numeric"
+                            />
+                            <Text style={styles.helperText}>{t('create.helperDuration')}</Text>
+                        </View>
+
+                        <View style={styles.switchRow}>
+                            <View style={styles.switchLabelContainer}>
+                                <Text style={styles.label}>{t('create.labelPrivate')}</Text>
+                                <Text style={styles.helperText}>{t('create.helperPrivate')}</Text>
+                            </View>
+                            <Switch
+                                value={isPrivate}
+                                onValueChange={setIsPrivate}
+                                trackColor={{ false: colors.border, true: colors.primary + '60' }}
+                                thumbColor={isPrivate ? colors.primary : colors.text.tertiary}
+                            />
                         </View>
 
                         <View style={styles.buttonGroup}>
@@ -201,5 +231,16 @@ const styles = StyleSheet.create({
     },
     createButton: {
         marginBottom: spacing.m,
+    },
+    switchRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing.l,
+        paddingVertical: spacing.s,
+    },
+    switchLabelContainer: {
+        flex: 1,
+        marginRight: spacing.m,
     },
 });

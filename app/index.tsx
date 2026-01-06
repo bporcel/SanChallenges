@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
+import * as Haptics from 'expo-haptics';
 import { ChallengeRepository } from '../src/data/repositories/ChallengeRepository';
 import { CheckRepository } from '../src/data/repositories/CheckRepository';
 import { Challenge } from '../src/domain/models/Challenge';
@@ -13,6 +14,11 @@ import { User } from '../src/domain/models/User';
 import { EditNameModal } from '../src/ui/components/EditNameModal';
 import { Card } from '../src/ui/components/Card';
 import { Button } from '../src/ui/components/Button';
+import { StreakBadge } from '../src/ui/components/StreakBadge';
+import { GoalProgress } from '../src/ui/components/GoalProgress';
+import { SocialContext } from '../src/ui/components/SocialContext';
+import { CheckCelebration } from '../src/ui/components/CheckCelebration';
+import { AuraBadge } from '../src/ui/components/AuraBadge';
 import { colors } from '../src/ui/theme/colors';
 import { spacing, layout } from '../src/ui/theme/spacing';
 import { typography } from '../src/ui/theme/typography';
@@ -27,12 +33,14 @@ export default function HomeScreen() {
     const [challenges, setChallenges] = useState<Challenge[]>([]);
     const [checkedToday, setCheckedToday] = useState<Record<string, boolean>>({});
     const [streaks, setStreaks] = useState<Record<string, number>>({});
-    const [totalPoints, setTotalPoints] = useState(0);
+    const [totalAura, setTotalAura] = useState(0);
     const [user, setUser] = useState<User | null>(null);
     const [isEditNameVisible, setIsEditNameVisible] = useState(false);
+    const [celebratingCheckId, setCelebratingCheckId] = useState<string | null>(null);
+    const [participantCounts, setParticipantCounts] = useState<Record<string, number>>({});
 
     const loadData = useCallback(async () => {
-        const allChallenges = await ChallengeRepository.getAll();
+        const allChallenges = await ChallengeRepository.sync();
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setChallenges(allChallenges);
 
@@ -42,7 +50,7 @@ export default function HomeScreen() {
         const today = dateService.getToday();
         const checks: Record<string, boolean> = {};
         const currentStreaks: Record<string, number> = {};
-        let points = 0;
+        let aura = 0;
 
         // Optimization: Fetch all checks once
         const allChecks = await CheckRepository.getAll();
@@ -54,12 +62,25 @@ export default function HomeScreen() {
 
             const completedChecks = challengeChecks.filter(c => c.completed);
             currentStreaks[challenge.id] = GamificationService.calculateStreak(challengeChecks);
-            points += completedChecks.length * (challenge.points || 0);
+            aura += completedChecks.length * (challenge.points || 0);
         }
 
         setCheckedToday(checks);
         setStreaks(currentStreaks);
-        setTotalPoints(points);
+        setTotalAura(aura);
+
+        // Load participant counts for social context
+        const counts: Record<string, number> = {};
+        for (const challenge of allChallenges) {
+            // Estimate participant count from ranking data
+            try {
+                const ranking = await CheckRepository.getRanking(challenge.id);
+                counts[challenge.id] = ranking.length;
+            } catch (e) {
+                counts[challenge.id] = 1; // At least the user
+            }
+        }
+        setParticipantCounts(counts);
     }, []);
 
     useFocusEffect(
@@ -78,6 +99,30 @@ export default function HomeScreen() {
         const isChecked = checkedToday[challengeId];
         const today = dateService.getToday();
 
+        // Show celebration animation only when checking (not unchecking)
+        if (!isChecked) {
+            setCelebratingCheckId(challengeId);
+            // Haptic feedback for successful check
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+
+        // Optimistic UI update - toggle immediately
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
+        setCheckedToday(prev => ({ ...prev, [challengeId]: !isChecked }));
+
+        // Update streak optimistically
+        setStreaks(prev => ({
+            ...prev,
+            [challengeId]: !isChecked ? (prev[challengeId] || 0) + 1 : Math.max(0, (prev[challengeId] || 0) - 1)
+        }));
+
+        // Update points optimistically
+        const challenge = challenges.find(c => c.id === challengeId);
+        if (challenge) {
+            setTotalAura(prev => !isChecked ? prev + (challenge.points || 0) : prev - (challenge.points || 0));
+        }
+
+        // Then persist to storage and server
         await CheckRepository.create({
             id: Crypto.randomUUID(),
             challengeId,
@@ -85,8 +130,8 @@ export default function HomeScreen() {
             completed: !isChecked,
         });
 
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
-        loadData(); // Reload to update points and streaks
+        // Reload data to refresh social context
+        loadData();
     };
 
     const handleDelete = async (challengeId: string) => {
@@ -99,8 +144,12 @@ export default function HomeScreen() {
                     text: t('common.delete'),
                     style: 'destructive',
                     onPress: async () => {
+                        // Optimistic UI update - remove immediately from state
+                        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                        setChallenges(prev => prev.filter(c => c.id !== challengeId));
+
+                        // Then persist to storage and server
                         await ChallengeRepository.delete(challengeId);
-                        loadData();
                     },
                 },
             ]
@@ -113,48 +162,95 @@ export default function HomeScreen() {
         loadData();
     };
 
-    const renderItem = ({ item }: { item: Challenge }) => (
-        <Card style={styles.item}>
-            <View style={styles.cardMain}>
-                <View style={styles.titleRow}>
-                    <Text style={styles.title}>{item.title}</Text>
-                    <View style={styles.pointsBadge}>
-                        <Text style={styles.pointsText}>{item.points} {t('common.pts')}</Text>
+    const renderItem = ({ item }: { item: Challenge }) => {
+        const isOwner = user?.id === item.creatorId;
+        const isPrivateChallenge = item.isPrivate === true;
+        const canCheck = !isPrivateChallenge || isOwner;
+
+        // Calculate current day from challenge creation
+        const createdDate = new Date(item.createdAt);
+        const today = new Date();
+        const daysDiff = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const currentDay = Math.max(1, daysDiff);
+        const totalDays = item.duration || 30;
+
+        return (
+            <Card style={styles.item}>
+                {/* Celebration overlay */}
+                <CheckCelebration
+                    visible={celebratingCheckId === item.id}
+                    onComplete={() => setCelebratingCheckId(null)}
+                />
+
+                <View style={styles.cardMain}>
+                    <View style={styles.titleRow}>
+                        <View style={styles.titleContainer}>
+                            <Text style={styles.title}>{item.title}</Text>
+                        </View>
+                        <View style={styles.badgesContainer}>
+                            {isPrivateChallenge && (
+                                <View style={styles.privateBadge}>
+                                    <Ionicons name="lock-closed" size={10} color={colors.text.inverse} />
+                                    <Text style={styles.privateBadgeText}>{t('home.privateBadge')}</Text>
+                                </View>
+                            )}
+                            <View style={styles.auraBadge}>
+                                <Text style={styles.auraText}>{item.points} {t('common.pts')}</Text>
+                            </View>
+                        </View>
                     </View>
+                    {item.description ? (
+                        <Text style={styles.description}>{item.description}</Text>
+                    ) : null}
+                    {!isOwner && item.creatorName && (
+                        <Text style={styles.createdByText}>{t('home.createdBy', { name: item.creatorName })}</Text>
+                    )}
+
+                    {/* Goal Progress */}
+                    <GoalProgress currentDay={currentDay} totalDays={totalDays} />
+
+                    {/* Social Context */}
+                    {user && (
+                        <View style={styles.socialContextContainer}>
+                            <SocialContext
+                                challengeId={item.id}
+                                currentUserId={user.id}
+                                totalParticipants={participantCounts[item.id] || 1}
+                            />
+                        </View>
+                    )}
                 </View>
-                {item.description ? (
-                    <Text style={styles.description}>{item.description}</Text>
-                ) : null}
-            </View>
 
-            <View style={styles.cardStats}>
-                <Text style={styles.streakText}>
-                    {streaks[item.id] > 0
-                        ? t('home.streak', { count: streaks[item.id] })
-                        : t('home.noStreak')}
-                </Text>
-                <Text style={styles.inviteCodeSubtle}>{t('home.code', { code: item.inviteCode })}</Text>
-            </View>
+                <View style={styles.cardStats}>
+                    <StreakBadge streak={streaks[item.id] || 0} />
+                    <Text style={styles.inviteCodeSubtle}>{t('home.code', { code: item.inviteCode })}</Text>
+                </View>
 
-            <View style={styles.cardActions}>
-                <Button
-                    title={t('common.delete')}
-                    variant="ghost"
-                    size="small"
-                    onPress={() => handleDelete(item.id)}
-                    style={styles.deleteButton}
-                    textStyle={{ color: colors.status.error }}
-                />
-                <Button
-                    title={checkedToday[item.id] ? t('common.undo') : t('common.check')}
-                    variant={checkedToday[item.id] ? 'secondary' : 'primary'}
-                    size="small"
-                    onPress={() => handleCheck(item.id)}
-                    style={styles.checkButton}
-                />
-            </View>
-        </Card>
-    );
+                {isPrivateChallenge && !isOwner && (
+                    <Text style={styles.ownerOnlyText}>{t('home.ownerOnlyCheck')}</Text>
+                )}
+
+                <View style={styles.cardActions}>
+                    <Button
+                        title={t('common.delete')}
+                        variant="ghost"
+                        size="small"
+                        onPress={() => handleDelete(item.id)}
+                        style={styles.deleteButton}
+                        textStyle={{ color: colors.status.error }}
+                    />
+                    <Button
+                        title={checkedToday[item.id] ? t('common.undo') : t('common.check')}
+                        variant={checkedToday[item.id] ? 'secondary' : 'primary'}
+                        size="small"
+                        onPress={() => handleCheck(item.id)}
+                        style={!canCheck ? [styles.checkButton, styles.disabledButton] : styles.checkButton}
+                        disabled={!canCheck}
+                    />
+                </View>
+            </Card>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -172,10 +268,7 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                     </View>
                     <View style={styles.headerRight}>
-                        <View style={styles.totalPointsBadge}>
-                            <Text style={styles.totalPointsValue}>{totalPoints}</Text>
-                            <Text style={styles.totalPointsLabel}>{t('common.pts')}</Text>
-                        </View>
+                        <AuraBadge value={totalAura} label={t('common.pts')} />
                     </View>
                 </View>
             )}
@@ -265,27 +358,7 @@ const styles = StyleSheet.create({
     },
     headerRight: {
         alignItems: 'flex-end',
-    },
-    totalPointsBadge: {
-        backgroundColor: colors.primary + '15',
-        paddingHorizontal: spacing.m,
-        paddingVertical: spacing.xs,
-        borderRadius: layout.borderRadius.l,
-        flexDirection: 'row',
-        alignItems: 'baseline',
-        borderWidth: 1,
-        borderColor: colors.primary + '30',
-    },
-    totalPointsLabel: {
-        ...typography.caption,
-        color: colors.primary,
-        marginLeft: 2,
-        fontWeight: '600',
-    },
-    totalPointsValue: {
-        ...typography.h3,
-        color: colors.primary,
-        fontWeight: 'bold',
+        justifyContent: 'center',
     },
     list: {
         padding: spacing.m,
@@ -307,19 +380,12 @@ const styles = StyleSheet.create({
     title: {
         ...typography.h3,
         color: colors.text.primary,
-        flex: 1,
     },
-    pointsBadge: {
-        backgroundColor: colors.primaryLight,
-        paddingHorizontal: spacing.s,
-        paddingVertical: 2,
-        borderRadius: layout.borderRadius.s,
-        alignSelf: 'flex-start',
-    },
-    pointsText: {
-        ...typography.caption,
-        color: colors.text.inverse,
-        fontWeight: 'bold',
+    badgesContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        marginTop: 2, // Fine-tune alignment with title text
     },
     description: {
         ...typography.bodySmall,
@@ -381,6 +447,64 @@ const styles = StyleSheet.create({
     },
     secondaryButtons: {
         flexDirection: 'row',
+    },
+    titleContainer: {
+        flex: 1,
+    },
+    privateBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.text.tertiary,
+        paddingHorizontal: spacing.xs,
+        paddingVertical: 2,
+        borderRadius: layout.borderRadius.s,
+        gap: 2,
+        height: 20, // Fixed height for alignment
+    },
+    privateBadgeText: {
+        ...typography.caption,
+        color: colors.text.inverse,
+        fontSize: 10,
+        fontWeight: 'bold',
+        lineHeight: 12,
+    },
+    auraBadge: {
+        backgroundColor: colors.aura.mid,
+        paddingHorizontal: spacing.s,
+        paddingVertical: 2,
+        borderRadius: layout.borderRadius.s,
+        height: 20, // Match privateBadge height
+        justifyContent: 'center',
+        shadowColor: colors.aura.mid,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    auraText: {
+        ...typography.caption,
+        color: colors.text.inverse,
+        fontWeight: 'bold',
+        lineHeight: 12,
+    },
+    createdByText: {
+        ...typography.caption,
+        color: colors.text.secondary,
+        marginTop: spacing.xs,
+        opacity: 0.8,
+    },
+    ownerOnlyText: {
+        ...typography.caption,
+        color: colors.text.tertiary,
+        fontStyle: 'italic',
+        marginTop: spacing.xs,
+        textAlign: 'center',
+    },
+    disabledButton: {
+        opacity: 0.5,
+    },
+    socialContextContainer: {
+        marginTop: spacing.xs,
     },
 });
 

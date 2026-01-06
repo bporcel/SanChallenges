@@ -17,15 +17,16 @@ export const ChallengeRepository = {
         }
     },
 
-    async create(challengeData: Pick<Challenge, 'title' | 'description' | 'points'>): Promise<void> {
+    async create(challengeData: Pick<Challenge, 'title' | 'description' | 'points' | 'duration' | 'isPrivate'>): Promise<void> {
         try {
-            const userId = await UserRepository.getUserId();
+            const user = await UserRepository.getUser();
             const response = await fetch(`${Config.API_URL}/challenges`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...challengeData,
-                    userId
+                    userId: user.id,
+                    displayName: user.displayName
                 })
             });
 
@@ -44,11 +45,15 @@ export const ChallengeRepository = {
 
     async join(inviteCode: string): Promise<Challenge> {
         try {
-            const userId = await UserRepository.getUserId();
+            const user = await UserRepository.getUser();
             const response = await fetch(`${Config.API_URL}/challenges/join`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ inviteCode, userId })
+                body: JSON.stringify({
+                    inviteCode,
+                    userId: user.id,
+                    displayName: user.displayName
+                })
             });
 
             if (!response.ok) {
@@ -86,6 +91,24 @@ export const ChallengeRepository = {
         } catch (e) {
             console.error('Error deleting challenge', e);
             throw e;
+        }
+    },
+
+    async sync(): Promise<Challenge[]> {
+        try {
+            const userId = await UserRepository.getUserId();
+            const response = await fetch(`${Config.API_URL}/users/${userId}/challenges`);
+            if (!response.ok) throw new Error('Failed to sync challenges');
+
+            const serverChallenges: Challenge[] = await response.json();
+
+            // Update local storage with fresh data from server
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(serverChallenges));
+            return serverChallenges;
+        } catch (e) {
+            console.error('Error syncing challenges', e);
+            // Return local data if sync fails
+            return this.getAll();
         }
     }
 };

@@ -10,6 +10,11 @@ Permitir que varios usuarios compartan y sigan retos comunes desde distintas ins
 - Deshacer check diario
 - Ranking por reto
 - Eliminar reto
+- Retos privados (solo creador puede marcar)
+- Sistema de Aura con rangos anime (Hokage, Jonin, etc.)
+- Duración de retos dinámica (configurable al crear)
+- Contexto social (ver quién ha marcado hoy por nombre)
+- Identidad automática estilo anime (Shadow Hokage, etc.)
 
 ## Qué no hace
 - Login o autenticación formal

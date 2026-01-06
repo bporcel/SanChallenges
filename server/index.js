@@ -23,39 +23,79 @@ const generateInviteCode = () => {
     return crypto.randomBytes(3).toString('hex').toUpperCase();
 };
 
+const generateAnimeName = () => {
+    const prefixes = [
+        'Shadow', 'Golden', 'Ultra', 'Spirit', 'Cosmic', 'Legendary',
+        'Shinobi', 'Saiyan', 'Cursed', 'Phantom', 'Iron', 'Steel',
+        'Dark', 'Light', 'Hidden', 'Eternal', 'Zenith', 'Apex'
+    ];
+    const suffixes = [
+        'Hokage', 'Sannin', 'Hunter', 'Alchemist', 'Titan', 'Ghoul',
+        'Shinigami', 'Pirate', 'Ninja', 'Samurai', 'Hero', 'Sensei',
+        'Senpai', 'Kage', 'Hashira', 'Warrior', 'Slayer', 'Reaper'
+    ];
+
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+
+    return `${prefix} ${suffix}`;
+};
+
+const ensureUser = async (userId, displayName) => {
+    let user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+        user = await prisma.user.create({
+            data: {
+                id: userId,
+                displayName: displayName || generateAnimeName()
+            }
+        });
+    } else if (displayName && user.displayName === 'Unknown User') {
+        // Update if we finally have a name
+        user = await prisma.user.update({
+            where: { id: userId },
+            data: { displayName }
+        });
+    }
+    return user;
+};
+
 // Helper to format dates to timestamps for compatibility
 const formatChallenge = (c) => ({
     ...c,
-    createdAt: c.createdAt.getTime()
+    createdAt: c.createdAt.getTime(),
+    isPrivate: c.isPrivate || false,
+    duration: c.duration || 30,
+    creatorId: c.creatorId || null,
+    creatorName: c.creator?.displayName || null
 });
 
 // POST /challenges - Create new challenge
 app.post('/challenges', async (req, res) => {
     console.log('Creating challenge with body:', req.body);
-    const { title, description, points, userId } = req.body;
+    const { title, description, points, duration, userId, isPrivate } = req.body;
     if (!title || !userId) return res.status(400).json({ error: 'Missing fields' });
 
     try {
         // Ensure user exists
-        let user = await prisma.user.findUnique({ where: { id: userId } });
-        if (!user) {
-            user = await prisma.user.create({
-                data: { id: userId, displayName: 'Unknown User' }
-            });
-        }
+        await ensureUser(userId, req.body.displayName);
 
         const newChallenge = await prisma.challenge.create({
             data: {
                 title,
                 description: description || '',
                 points: points || 0,
+                duration: duration || 30,
                 inviteCode: generateInviteCode(),
+                isPrivate: isPrivate || false,
+                creatorId: userId,
                 participants: {
                     create: {
                         userId: userId
                     }
                 }
-            }
+            },
+            include: { creator: true }
         });
 
         res.json(formatChallenge(newChallenge));
@@ -72,18 +112,14 @@ app.post('/challenges/join', async (req, res) => {
 
     try {
         const challenge = await prisma.challenge.findUnique({
-            where: { inviteCode }
+            where: { inviteCode },
+            include: { creator: true }
         });
 
         if (!challenge) return res.status(404).json({ error: 'Challenge not found' });
 
         // Ensure user exists
-        let user = await prisma.user.findUnique({ where: { id: userId } });
-        if (!user) {
-            user = await prisma.user.create({
-                data: { id: userId, displayName: 'Unknown User' }
-            });
-        }
+        await ensureUser(userId, req.body.displayName);
 
         // Join if not already joined
         await prisma.participant.upsert({
@@ -106,10 +142,31 @@ app.post('/challenges/join', async (req, res) => {
 app.get('/challenges/:id', async (req, res) => {
     try {
         const challenge = await prisma.challenge.findUnique({
-            where: { id: req.params.id }
+            where: { id: req.params.id },
+            include: { creator: true }
         });
         if (!challenge) return res.status(404).json({ error: 'Not found' });
         res.json(formatChallenge(challenge));
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// GET /users/:userId/challenges - Get all challenges for a user
+app.get('/users/:userId/challenges', async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const participations = await prisma.participant.findMany({
+            where: { userId },
+            include: {
+                challenge: {
+                    include: { creator: true }
+                }
+            }
+        });
+        const challenges = participations.map(p => formatChallenge(p.challenge));
+        res.json(challenges);
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Internal server error' });
@@ -227,15 +284,64 @@ app.get('/challenges/:id/ranking', async (req, res) => {
     }
 });
 
+// GET /challenges/:id/checks/today - Get today's checks with user names
+app.get('/challenges/:id/checks/today', async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Get today's date in YYYY-MM-DD format
+        const today = new Date().toISOString().split('T')[0];
+
+        // Find completed checks for today and include user info
+        const checks = await prisma.check.findMany({
+            where: {
+                challengeId: id,
+                date: today,
+                completed: true
+            },
+            include: {
+                user: {
+                    select: {
+                        displayName: true
+                    }
+                }
+            }
+        });
+
+        const userNames = checks.map(c => c.user.displayName || 'Unknown');
+
+        res.json({
+            count: userNames.length,
+            userNames,
+            date: today
+        });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // DELETE /challenges/:challengeId/participants/:userId - Leave challenge
 app.delete('/challenges/:challengeId/participants/:userId', async (req, res) => {
     const { challengeId, userId } = req.params;
     try {
-        await prisma.participant.delete({
-            where: {
-                userId_challengeId: { userId, challengeId }
-            }
+        const challenge = await prisma.challenge.findUnique({
+            where: { id: challengeId }
         });
+
+        if (challenge && challenge.isPrivate && challenge.creatorId === userId) {
+            // If private and creator leaves, delete the whole challenge
+            await prisma.challenge.delete({
+                where: { id: challengeId }
+            });
+            console.log(`Private challenge ${challengeId} deleted because creator ${userId} left.`);
+        } else {
+            // Normal leave
+            await prisma.participant.delete({
+                where: {
+                    userId_challengeId: { userId, challengeId }
+                }
+            });
+        }
         res.json({ success: true });
     } catch (e) {
         console.error(e);

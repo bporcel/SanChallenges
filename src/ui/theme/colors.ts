@@ -39,5 +39,20 @@ export const colors = {
         pro: '#F59E0B', // Amber
         active: '#10B981', // Emerald
         beginner: '#6B7280', // Gray
+    },
+
+    streak: {
+        cold: '#64748B', // Slate 500 - 0-2 days
+        warming: '#FBBF24', // Amber 400 - 3-6 days
+        hot: '#FB923C', // Orange 400 - 7-13 days
+        fire: '#C026D3', // Fuchsia 600 - 14+ days
+        broken: '#475569', // Slate 600 - broken streak
+    },
+    aura: {
+        low: '#3B82F6', // Blue (Genin)
+        mid: '#10B981', // Green (Chunin)
+        high: '#F59E0B', // Gold (Jonin)
+        godly: '#8B5CF6', // Purple (Hokage)
+        ultimate: '#EF4444', // Red (Berserk/Super Saiyan)
     }
 };

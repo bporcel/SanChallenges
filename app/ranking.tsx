@@ -4,12 +4,14 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ChallengeRepository } from '../src/data/repositories/ChallengeRepository';
 import { CheckRepository } from '../src/data/repositories/CheckRepository';
 import { Challenge } from '../src/domain/models/Challenge';
 import { UserRepository } from '../src/data/repositories/UserRepository';
 import { User } from '../src/domain/models/User';
 import { Card } from '../src/ui/components/Card';
+import { RankingChangeIndicator } from '../src/ui/components/RankingChangeIndicator';
 import { colors } from '../src/ui/theme/colors';
 import { spacing, layout } from '../src/ui/theme/spacing';
 import { typography } from '../src/ui/theme/typography';
@@ -22,8 +24,14 @@ import { t } from '../src/i18n/i18n';
 interface UserRanking {
     userId: string;
     count: number;
-    totalPoints: number;
+    totalAura: number;
     displayName?: string;
+    previousRank?: number | null;
+}
+
+interface RankChange {
+    userDisplayName: string;
+    rankChange: number;
 }
 
 export default function RankingScreen() {
@@ -33,6 +41,7 @@ export default function RankingScreen() {
     const [rankings, setRankings] = useState<Record<string, UserRanking[]>>({});
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [rankChanges, setRankChanges] = useState<Record<string, RankChange | null>>({});
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
@@ -45,17 +54,77 @@ export default function RankingScreen() {
             setChallenges(allChallenges);
 
             const newRankings: Record<string, UserRanking[]> = {};
+            const changes: Record<string, RankChange | null> = {};
 
             // Optimization: Fetch rankings in parallel
             const rankingPromises = allChallenges.map(async (challenge) => {
                 try {
                     const ranking = await CheckRepository.getRanking(challenge.id);
                     // Calculate total points
-                    const rankingWithPoints = ranking.map(r => ({
+                    const rankingWithAura = ranking.map(r => ({
                         ...r,
-                        totalPoints: r.count * (challenge.points || 0)
+                        totalAura: r.count * (challenge.points || 0)
                     }));
-                    return { challengeId: challenge.id, ranking: rankingWithPoints };
+
+                    // Load previous rankings from storage
+                    const storageKey = `previous_rankings_${challenge.id}`;
+                    const previousRankingsJson = await AsyncStorage.getItem(storageKey);
+                    const previousRankings: Record<string, number> = previousRankingsJson
+                        ? JSON.parse(previousRankingsJson)
+                        : {};
+
+                    // Attach previous ranks
+                    const rankingsWithChanges = rankingWithAura.map((r: UserRanking, index: number) => {
+                        // Calculate current rank (handle ties)
+                        let currentRank = 1;
+                        for (let i = 0; i < index; i++) {
+                            if (rankingWithAura[i].totalAura > r.totalAura) {
+                                currentRank++;
+                            }
+                        }
+
+                        return {
+                            ...r,
+                            previousRank: previousRankings[r.userId] || null
+                        };
+                    });
+
+                    // Check if current user's rank changed
+                    if (user) {
+                        const userRanking = rankingsWithChanges.find(r => r.userId === user.id);
+                        if (userRanking && userRanking.previousRank !== null) {
+                            let currentRank = 1;
+                            const userIndex = rankingsWithChanges.indexOf(userRanking);
+                            for (let i = 0; i < userIndex; i++) {
+                                if (rankingsWithChanges[i].totalAura > userRanking.totalAura) {
+                                    currentRank++;
+                                }
+                            }
+
+                            const rankChange = userRanking.previousRank - currentRank;
+                            if (rankChange !== 0) {
+                                changes[challenge.id] = {
+                                    userDisplayName: user.displayName,
+                                    rankChange
+                                };
+                            }
+                        }
+                    }
+
+                    // Save current rankings for next time
+                    const currentRankMap: Record<string, number> = {};
+                    rankingsWithChanges.forEach((r: UserRanking, index: number) => {
+                        let rank = 1;
+                        for (let i = 0; i < index; i++) {
+                            if (rankingsWithChanges[i].totalAura > r.totalAura) {
+                                rank++;
+                            }
+                        }
+                        currentRankMap[r.userId] = rank;
+                    });
+                    await AsyncStorage.setItem(storageKey, JSON.stringify(currentRankMap));
+
+                    return { challengeId: challenge.id, ranking: rankingsWithChanges };
                 } catch (e) {
                     console.error(`Failed to load ranking for ${challenge.id}`, e);
                     return { challengeId: challenge.id, ranking: [] };
@@ -71,6 +140,7 @@ export default function RankingScreen() {
             }
 
             setRankings(newRankings);
+            setRankChanges(changes);
         } finally {
             setIsLoading(false);
         }
@@ -108,12 +178,12 @@ export default function RankingScreen() {
     const renderRankingItem = (item: UserRanking, index: number, allRankings: UserRanking[]) => {
         const isCurrentUser = item.userId === currentUser?.id;
         const prevUser = index > 0 ? allRankings[index - 1] : null;
-        const pointDiff = prevUser ? prevUser.totalPoints - item.totalPoints : null;
+        const pointDiff = prevUser ? prevUser.totalAura - item.totalAura : null;
 
         // Calculate rank (1-indexed, handles ties)
         let rank = 1;
         for (let i = 0; i < index; i++) {
-            if (allRankings[i].totalPoints > item.totalPoints) {
+            if (allRankings[i].totalAura > item.totalAura) {
                 rank++;
             }
         }
@@ -144,11 +214,18 @@ export default function RankingScreen() {
                             {displayName}
                         </Text>
                         {isCurrentUser && <Text style={styles.youBadge}>{t('ranking.you')}</Text>}
+                        {/* Ranking change indicator */}
+                        {item.previousRank !== undefined && (
+                            <RankingChangeIndicator
+                                previousRank={item.previousRank}
+                                currentRank={rank}
+                            />
+                        )}
                     </View>
 
                     <View style={styles.statsContainer}>
                         <View style={styles.pointsRow}>
-                            <Text style={styles.points}>{item.totalPoints} {t('common.pts')}</Text>
+                            <Text style={styles.points}>{item.totalAura} {t('common.pts')}</Text>
                             <Text style={styles.checks}> • {item.count} {t('ranking.checks')}</Text>
                         </View>
                         {pointDiff !== null && pointDiff > 0 && (
@@ -160,18 +237,35 @@ export default function RankingScreen() {
         );
     };
 
-    const renderItem = ({ item }: { item: Challenge }) => (
-        <Card style={styles.item}>
-            <Text style={styles.title}>{item.title}</Text>
-            <View style={styles.rankingContainer}>
-                {rankings[item.id]?.length > 0 ? (
-                    rankings[item.id].slice(0, 5).map((r, i) => renderRankingItem(r, i, rankings[item.id]))
-                ) : (
-                    <Text style={styles.noData}>{t('ranking.noData')}</Text>
+    const renderItem = ({ item }: { item: Challenge }) => {
+        const rankChange = rankChanges[item.id];
+
+        return (
+            <Card style={styles.item}>
+                <Text style={styles.title}>{item.title}</Text>
+                {rankChange && (
+                    <View style={styles.changeMessage}>
+                        <Text style={[
+                            styles.changeText,
+                            { color: rankChange.rankChange > 0 ? colors.status.success : colors.status.error }
+                        ]}>
+                            {rankChange.rankChange > 0
+                                ? `¡Subiste ${rankChange.rankChange} posiciones! 🎉`
+                                : `Bajaste ${Math.abs(rankChange.rankChange)} posiciones`
+                            }
+                        </Text>
+                    </View>
                 )}
-            </View>
-        </Card>
-    );
+                <View style={styles.rankingContainer}>
+                    {rankings[item.id]?.length > 0 ? (
+                        rankings[item.id].slice(0, 5).map((r, i) => renderRankingItem(r, i, rankings[item.id]))
+                    ) : (
+                        <Text style={styles.noData}>{t('ranking.noData')}</Text>
+                    )}
+                </View>
+            </Card>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -333,5 +427,18 @@ const styles = StyleSheet.create({
         marginTop: 50,
         fontSize: 16,
         color: colors.text.tertiary,
+    },
+    changeMessage: {
+        backgroundColor: colors.primaryLight + '20',
+        borderRadius: layout.borderRadius.s,
+        padding: spacing.s,
+        marginBottom: spacing.s,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.primary,
+    },
+    changeText: {
+        ...typography.bodySmall,
+        fontWeight: '600',
+        textAlign: 'center',
     },
 });

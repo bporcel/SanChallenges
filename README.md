@@ -8,7 +8,8 @@ App móvil Android para trackear retos compartidos entre amigos, sincronizada on
 - Unirse a retos existentes mediante invitación
 - Marcar cumplimiento diario
 - Ranking compartido entre participantes
-- Dinero ficticio como incentivo
+- Sistema de **Aura** (puntos con temática anime)
+- Duración de retos personalizable (dinámica)
 
 ## Público objetivo
 Grupos pequeños de amigos que quieren compartir retos sin fricción ni cuentas.

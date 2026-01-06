@@ -65,5 +65,19 @@ export const CheckRepository = {
             console.error('Error fetching ranking', e);
             return [];
         }
+    },
+
+    async getTodayCheckIns(challengeId: string): Promise<string[]> {
+        try {
+            const response = await fetch(`${Config.API_URL}/challenges/${challengeId}/checks/today`);
+            if (response.ok) {
+                const data = await response.json();
+                return data.userNames || [];
+            }
+            return [];
+        } catch (e) {
+            console.error('Error fetching today check-ins', e);
+            return [];
+        }
     }
 };

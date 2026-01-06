@@ -45,10 +45,10 @@ export const GamificationService = {
     },
 
     getRankTier(points: number): { label: string; color: string } {
-        if (points >= 1000) return { label: t('ranks.legend'), color: colors.tiers.legend };
-        if (points >= 500) return { label: t('ranks.elite'), color: colors.tiers.elite };
-        if (points >= 200) return { label: t('ranks.pro'), color: colors.tiers.pro };
-        if (points >= 50) return { label: t('ranks.active'), color: colors.tiers.active };
-        return { label: t('ranks.beginner'), color: colors.tiers.beginner };
+        if (points >= 1000) return { label: t('ranks.legend'), color: colors.aura.godly };
+        if (points >= 500) return { label: t('ranks.elite'), color: colors.aura.high };
+        if (points >= 200) return { label: t('ranks.pro'), color: colors.aura.mid };
+        if (points >= 50) return { label: t('ranks.active'), color: colors.aura.low };
+        return { label: t('ranks.beginner'), color: colors.text.tertiary };
     }
 };

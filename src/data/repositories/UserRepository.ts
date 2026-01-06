@@ -13,7 +13,7 @@ export const UserRepository = {
                 const user: User = JSON.parse(jsonValue);
                 // Migration: If user exists but has no displayName, add one
                 if (!user.displayName) {
-                    user.displayName = generateFunnyName();
+                    user.displayName = generateAnimeName();
                     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(user));
                     // Sync with server (fire and forget)
                     fetch(`${Config.API_URL}/users`, {
@@ -29,7 +29,7 @@ export const UserRepository = {
             const newId = Crypto.randomUUID();
             const newUser: User = {
                 id: newId,
-                displayName: generateFunnyName()
+                displayName: generateAnimeName()
             };
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
 
@@ -73,12 +73,20 @@ export const UserRepository = {
     }
 };
 
-function generateFunnyName(): string {
-    const adjectives = ['Happy', 'Lucky', 'Sunny', 'Clever', 'Swift', 'Brave', 'Calm', 'Eager', 'Fancy', 'Jolly'];
-    const nouns = ['Badger', 'Panda', 'Fox', 'Owl', 'Tiger', 'Lion', 'Bear', 'Koala', 'Hawk', 'Eagle'];
+function generateAnimeName(): string {
+    const prefixes = [
+        'Shadow', 'Golden', 'Ultra', 'Spirit', 'Cosmic', 'Legendary',
+        'Shinobi', 'Saiyan', 'Cursed', 'Phantom', 'Iron', 'Steel',
+        'Dark', 'Light', 'Hidden', 'Eternal', 'Zenith', 'Apex'
+    ];
+    const suffixes = [
+        'Hokage', 'Sannin', 'Hunter', 'Alchemist', 'Titan', 'Ghoul',
+        'Shinigami', 'Pirate', 'Ninja', 'Samurai', 'Hero', 'Sensei',
+        'Senpai', 'Kage', 'Hashira', 'Warrior', 'Slayer', 'Reaper'
+    ];
 
-    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
 
-    return `${adj} ${noun}`;
+    return `${prefix} ${suffix}`;
 }

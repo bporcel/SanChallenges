@@ -4,16 +4,19 @@
 
 ## User
 - id (String, UUID)
-- displayName (String)
+- displayName (String, defaults to anime-themed names like "Shadow Hokage")
 - updatedAt (DateTime)
 
 ## Challenge
 - id (String, UUID)
 - title (String)
 - description (String)
-- points (Int)
+- points (Int, displayed as **Aura** in UI)
+- duration (Int, total days)
 - inviteCode (String, Unique)
 - createdAt (DateTime)
+- isPrivate (Boolean, default false)
+- creatorId (String, FK User)
 
 ## Participant (Join Table)
 - userId (FK User)

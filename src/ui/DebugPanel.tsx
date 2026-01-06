@@ -1,16 +1,57 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { networkLogger } from '../data/NetworkLogger';
-import { getApiUrl, setApiUrl, DEFAULT_API_URL, LOCAL_API_URL, PROD_API_URL } from '../config';
+import { getApiUrl, setApiUrl, DEFAULT_API_URL, LOCAL_API_URL, PROD_API_URL, EMULATOR_API_URL } from '../config';
 import { dateService } from '../data/DateService';
 import { t, setLocale, getCurrentLocale } from '../i18n/i18n';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
+import { CheckCelebration } from './components/CheckCelebration';
+import { StreakBadge } from './components/StreakBadge';
+import { RankingChangeIndicator } from './components/RankingChangeIndicator';
+import { SocialContext } from './components/SocialContext';
 
 export const DebugPanel = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [logs, setLogs] = useState(networkLogger.getLogs());
     const [apiUrl, setApiUrlState] = useState('');
     const [dateOffset, setDateOffset] = useState(dateService.getOffset());
+    const [showTestCelebration, setShowTestCelebration] = useState(false);
+    const [testStreak, setTestStreak] = useState(5);
+
+    const clearRankingHistory = async () => {
+        try {
+            const keys = await AsyncStorage.getAllKeys();
+            const rankingKeys = keys.filter(k => k.startsWith('previous_rankings_'));
+            if (rankingKeys.length > 0) {
+                await AsyncStorage.multiRemove(rankingKeys);
+                Alert.alert(t('common.success'), 'Ranking history cleared');
+            } else {
+                Alert.alert('Info', 'No ranking history to clear');
+            }
+        } catch (e) {
+            Alert.alert('Error', 'Failed to clear ranking history');
+        }
+    };
+
+    const handleResetAllData = () => {
+        Alert.alert(
+            'Reset All Data',
+            'Are you sure you want to clear all local data? This cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Reset',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await AsyncStorage.clear();
+                        Alert.alert('Success', 'All data cleared. Please restart the app.');
+                    }
+                }
+            ]
+        );
+    };
 
     useEffect(() => {
         getApiUrl().then(setApiUrlState);
@@ -64,6 +105,10 @@ export const DebugPanel = () => {
     return (
         <Modal visible={isVisible} animationType="slide">
             <SafeAreaView style={styles.container}>
+                <CheckCelebration
+                    visible={showTestCelebration}
+                    onComplete={() => setShowTestCelebration(false)}
+                />
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>{t('debug.panelTitle')}</Text>
                     <TouchableOpacity onPress={() => setIsVisible(false)} style={styles.closeButton}>
@@ -110,12 +155,23 @@ export const DebugPanel = () => {
                             autoCapitalize="none"
                             autoCorrect={false}
                         />
+                        {Platform.OS === 'android' && apiUrl.includes('localhost') && (
+                            <Text style={styles.warningText}>
+                                ⚠️ 'localhost' doesn't work on Android. Use '10.0.2.2' for emulator or your local IP for devices.
+                            </Text>
+                        )}
                         <View style={styles.quickButtons}>
                             <TouchableOpacity
                                 onPress={() => setApiUrlState(LOCAL_API_URL)}
                                 style={styles.quickButton}
                             >
                                 <Text style={styles.quickButtonText}>{t('debug.localIp')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setApiUrlState(EMULATOR_API_URL)}
+                                style={styles.quickButton}
+                            >
+                                <Text style={styles.quickButtonText}>Emulator</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => setApiUrlState(PROD_API_URL)}
@@ -151,6 +207,66 @@ export const DebugPanel = () => {
                                 <Text style={styles.dateButtonText}>{t('debug.plusDay')}</Text>
                             </TouchableOpacity>
                         </View>
+                    </View>
+
+                    <View style={styles.configSection}>
+                        <Text style={styles.sectionTitle}>UX Testing</Text>
+
+                        <View style={styles.debugRow}>
+                            <TouchableOpacity
+                                onPress={() => setShowTestCelebration(true)}
+                                style={styles.testButton}
+                            >
+                                <Text style={styles.testButtonText}>Celebration 🎉</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={() => handleResetAllData()}
+                                style={styles.resetButton}
+                            >
+                                <Text style={styles.resetButtonText}>Reset All Data ⚠️</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.subSectionTitle}>Haptics Test</Text>
+                        <View style={styles.quickButtons}>
+                            <TouchableOpacity onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)} style={styles.quickButton}>
+                                <Text style={styles.quickButtonText}>Light</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)} style={styles.quickButton}>
+                                <Text style={styles.quickButtonText}>Medium</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)} style={styles.quickButton}>
+                                <Text style={styles.quickButtonText}>Success</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.subSectionTitle}>Streak Badges</Text>
+                        <View style={styles.debugRow}>
+                            <TouchableOpacity onPress={() => setTestStreak(Math.max(0, testStreak - 1))} style={styles.quickButton}>
+                                <Text style={styles.quickButtonText}>-1</Text>
+                            </TouchableOpacity>
+                            <StreakBadge streak={testStreak} />
+                            <TouchableOpacity onPress={() => setTestStreak(testStreak + 1)} style={styles.quickButton}>
+                                <Text style={styles.quickButtonText}>+1</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.subSectionTitle}>Ranking Indicators</Text>
+                        <View style={styles.debugRow}>
+                            <RankingChangeIndicator previousRank={5} currentRank={3} />
+                            <RankingChangeIndicator previousRank={2} currentRank={4} />
+                            <RankingChangeIndicator previousRank={3} currentRank={3} />
+                        </View>
+
+                        <Text style={styles.subSectionTitle}>Social Context</Text>
+                        <View style={styles.debugRow}>
+                            <SocialContext challengeId="test" currentUserId="test" totalParticipants={5} />
+                        </View>
+
+                        <TouchableOpacity onPress={clearRankingHistory} style={[styles.resetButton, { marginTop: 10, alignSelf: 'flex-start' }]}>
+                            <Text style={styles.resetButtonText}>Clear Ranking History</Text>
+                        </TouchableOpacity>
                     </View>
 
                     <View style={styles.logsHeader}>
@@ -427,5 +543,25 @@ const styles = StyleSheet.create({
         fontSize: 10,
         color: '#ff3b30',
         fontFamily: 'monospace',
+    },
+    subSectionTitle: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#888',
+        marginTop: 12,
+        marginBottom: 4,
+    },
+    debugRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginVertical: 4,
+    },
+    warningText: {
+        color: '#ff9500',
+        fontSize: 10,
+        marginBottom: 8,
+        fontWeight: '600',
     },
 });

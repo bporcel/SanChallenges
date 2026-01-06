@@ -9,6 +9,7 @@ const DEV_API_URL = Platform.select({
     default: 'http://localhost:3000',
 });
 
+export const EMULATOR_API_URL = 'http://10.0.2.2:3000';
 export const LOCAL_API_URL = 'http://192.168.0.20:3000';
 export const PROD_API_URL = 'https://sanchallenges.onrender.com';
 

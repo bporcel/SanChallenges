@@ -6,6 +6,7 @@ POST /challenges/join
 GET /challenges/{id}
 POST /checks
 GET /challenges/{id}/ranking
+GET /challenges/{id}/checks/today
 DELETE /challenges/{id}/participants/{userId}
 
 ## Notas
