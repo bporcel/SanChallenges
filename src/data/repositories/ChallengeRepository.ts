@@ -17,7 +17,7 @@ export const ChallengeRepository = {
         }
     },
 
-    async create(challengeData: Pick<Challenge, 'title' | 'description' | 'points' | 'duration' | 'isPrivate'>): Promise<void> {
+    async create(challengeData: Pick<Challenge, 'title' | 'description' | 'points' | 'duration' | 'isPrivate' | 'isLongTerm'>): Promise<void> {
         try {
             const user = await UserRepository.getUser();
             const response = await fetch(`${Config.API_URL}/challenges`, {
@@ -78,15 +78,28 @@ export const ChallengeRepository = {
 
     async delete(challengeId: string): Promise<void> {
         try {
-            const challenges = await this.getAll();
-            const filtered = challenges.filter(c => c.id !== challengeId);
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-
-            // Sync with server (fire and forget)
             const userId = await UserRepository.getUserId();
-            fetch(`${Config.API_URL}/challenges/${challengeId}/participants/${userId}`, {
-                method: 'DELETE'
-            }).catch(e => console.error('Background sync failed', e));
+
+            // Sync with server FIRST before removing locally
+            try {
+                const response = await fetch(`${Config.API_URL}/challenges/${challengeId}/participants/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}`);
+                }
+
+                // Only remove from local storage if server sync succeeded
+                const challenges = await this.getAll();
+                const filtered = challenges.filter(c => c.id !== challengeId);
+                await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+
+            } catch (networkError) {
+                console.error('Failed to sync delete with server:', networkError);
+                // Still allow local delete but warn the user
+                throw new Error('Network error: Could not leave challenge on server. Please try again.');
+            }
 
         } catch (e) {
             console.error('Error deleting challenge', e);
@@ -109,6 +122,34 @@ export const ChallengeRepository = {
             console.error('Error syncing challenges', e);
             // Return local data if sync fails
             return this.getAll();
+        }
+    },
+
+    async complete(challengeId: string): Promise<void> {
+        try {
+            const userId = await UserRepository.getUserId();
+            const response = await fetch(`${Config.API_URL}/challenges/${challengeId}/complete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Failed to complete challenge');
+            }
+
+            const { completedAt } = await response.json();
+
+            // Update local storage with completion timestamp
+            const challenges = await this.getAll();
+            const updated = challenges.map(c =>
+                c.id === challengeId ? { ...c, completedAt } : c
+            );
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        } catch (e) {
+            console.error('Error completing challenge', e);
+            throw e;
         }
     }
 };

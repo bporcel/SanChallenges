@@ -9,38 +9,41 @@ export const UserRepository = {
     async getUser(): Promise<User> {
         try {
             const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
-            if (jsonValue != null) {
-                const user: User = JSON.parse(jsonValue);
-                // Migration: If user exists but has no displayName, add one
-                if (!user.displayName) {
-                    user.displayName = generateAnimeName();
-                    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-                    // Sync with server (fire and forget)
-                    fetch(`${Config.API_URL}/users`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(user)
-                    }).catch(e => console.error('Background sync failed', e));
-                }
+            let user: User | null = jsonValue != null ? JSON.parse(jsonValue) : null;
+
+            // If we have a user but it's stuck in 'Loading...', try to sync again
+            if (user && user.displayName !== 'Loading...') {
                 return user;
             }
 
-            // Create new identity
-            const newId = Crypto.randomUUID();
-            const newUser: User = {
-                id: newId,
-                displayName: generateAnimeName()
-            };
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
+            // Create new identity if doesn't exist
+            const userId = user?.id || Crypto.randomUUID();
+            if (!user) {
+                user = {
+                    id: userId,
+                    displayName: 'Loading...'
+                };
+                await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+            }
 
-            // Sync with server (fire and forget)
-            fetch(`${Config.API_URL}/users`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newUser)
-            }).catch(e => console.error('Background sync failed', e));
+            // Sync with server to get generated name and aura data
+            try {
+                const response = await fetch(`${Config.API_URL}/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: userId })
+                });
 
-            return newUser;
+                if (response.ok) {
+                    const serverUser = await response.json();
+                    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(serverUser));
+                    return serverUser;
+                }
+            } catch (e) {
+                console.error('Failed to sync user with server', e);
+            }
+
+            return user;
         } catch (e) {
             console.error('Error managing user identity', e);
             return { id: 'temp-error-id', displayName: 'Error User' };
@@ -53,12 +56,17 @@ export const UserRepository = {
             user.displayName = name;
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(user));
 
-            // Sync with server (fire and forget)
-            fetch(`${Config.API_URL}/users`, {
+            // Sync with server
+            const response = await fetch(`${Config.API_URL}/users`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(user)
-            }).catch(e => console.error('Background sync failed', e));
+                body: JSON.stringify({ id: user.id, displayName: name })
+            });
+
+            if (response.ok) {
+                const serverUser = await response.json();
+                await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(serverUser));
+            }
 
         } catch (e) {
             console.error('Error updating display name', e);
@@ -72,21 +80,3 @@ export const UserRepository = {
         return user.id;
     }
 };
-
-function generateAnimeName(): string {
-    const prefixes = [
-        'Shadow', 'Golden', 'Ultra', 'Spirit', 'Cosmic', 'Legendary',
-        'Shinobi', 'Saiyan', 'Cursed', 'Phantom', 'Iron', 'Steel',
-        'Dark', 'Light', 'Hidden', 'Eternal', 'Zenith', 'Apex'
-    ];
-    const suffixes = [
-        'Hokage', 'Sannin', 'Hunter', 'Alchemist', 'Titan', 'Ghoul',
-        'Shinigami', 'Pirate', 'Ninja', 'Samurai', 'Hero', 'Sensei',
-        'Senpai', 'Kage', 'Hashira', 'Warrior', 'Slayer', 'Reaper'
-    ];
-
-    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-    const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
-
-    return `${prefix} ${suffix}`;
-}

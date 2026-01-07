@@ -12,12 +12,11 @@ ENV NODE_ENV=development
 RUN apk -U upgrade && apk add --no-cache openssl
 RUN npm install --legacy-peer-deps
 
-# Copy server code and prisma schema
+# Copy server code (which now includes prisma directory)
 COPY server ./server
-COPY prisma ./prisma
 
 # Generate Prisma Client
-RUN npx prisma generate
+RUN cd server && npx prisma generate
 
 # Set production environment for runtime
 ENV NODE_ENV=production
@@ -27,4 +26,4 @@ EXPOSE 3000
 
 # Start server
 # We use db push to sync schema (easier for initial setup than migrations)
-CMD ["sh", "-c", "npx prisma db push && node server/index.js"]
+CMD ["sh", "-c", "cd server && npx prisma db push && node index.js"]

@@ -15,6 +15,11 @@ model User {
   displayName String
   updatedAt   DateTime      @default(now())
   
+  // Aura reputation tracking (global across all challenges)
+  currentStreak  Int        @default(0)
+  lastCheckDate  String?
+  previousStreak Int        @default(0)
+  
   participations    Participant[]
   checks            Check[]
   createdChallenges Challenge[]   @relation("ChallengeCreator")
@@ -29,6 +34,7 @@ model Challenge {
   inviteCode  String        @unique
   createdAt   DateTime      @default(now())
   isPrivate   Boolean       @default(false)
+  isLongTerm  Boolean       @default(false)
   creatorId   String?
   creator     User?         @relation("ChallengeCreator", fields: [creatorId], references: [id])
 
@@ -42,6 +48,7 @@ model Participant {
   challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   challengeId String
   joinedAt    DateTime  @default(now())
+  completedAt DateTime?
 
   @@id([userId, challengeId])
 }

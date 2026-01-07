@@ -79,5 +79,28 @@ export const CheckRepository = {
             console.error('Error fetching today check-ins', e);
             return [];
         }
+    },
+
+    async getTodayCheckInsBulk(challengeIds: string[]): Promise<Record<string, string[]>> {
+        try {
+            const response = await fetch(`${Config.API_URL}/checks/today/bulk`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ challengeIds })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const result: Record<string, any> = {};
+                for (const [challengeId, checkData] of Object.entries(data)) {
+                    result[challengeId] = checkData;
+                }
+                return result;
+            }
+            return {};
+        } catch (e) {
+            console.error('Error fetching bulk today check-ins', e);
+            return {};
+        }
     }
 };

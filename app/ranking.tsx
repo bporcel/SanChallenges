@@ -17,6 +17,10 @@ import { spacing, layout } from '../src/ui/theme/spacing';
 import { typography } from '../src/ui/theme/typography';
 import { GamificationService } from '../src/domain/services/GamificationService';
 import { LoadingOverlay } from '../src/ui/components/LoadingOverlay';
+import { SocialContext } from '../src/ui/components/SocialContext';
+import { SocialDataProvider, useSocialData } from '../src/ui/components/SocialDataContext';
+import { AuraIndicator } from '../src/ui/components/AuraIndicator';
+import { AuraService } from '../src/domain/services/AuraService';
 import { t } from '../src/i18n/i18n';
 
 
@@ -28,6 +32,8 @@ interface UserRanking {
     displayName?: string;
     previousRank?: number | null;
     currentRank?: number;
+    auraState?: string;
+    currentStreak?: number;
 }
 
 interface RankChange {
@@ -43,6 +49,7 @@ export default function RankingScreen() {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [rankChanges, setRankChanges] = useState<Record<string, RankChange | null>>({});
+    const { loadCheckInsForChallenges } = useSocialData();
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
@@ -63,10 +70,17 @@ export default function RankingScreen() {
                     const ranking = await CheckRepository.getRanking(challenge.id);
 
                     // Calculate total aura for each user
-                    const rankingsWithAura: UserRanking[] = ranking.map(r => ({
-                        ...r,
-                        totalAura: r.count * (challenge.points || 0)
-                    }));
+                    const rankingsWithAura: UserRanking[] = ranking.map(r => {
+                        const totalAura = GamificationService.calculateChallengePoints(
+                            challenge,
+                            r.count,
+                            (r as any).isCompleted
+                        );
+                        return {
+                            ...r,
+                            totalAura
+                        };
+                    });
 
                     // Check if current user's rank changed for the notification message
                     if (user) {
@@ -108,10 +122,14 @@ export default function RankingScreen() {
 
             setRankings(newRankings);
             setRankChanges(changes);
+
+            // Fetch social context data for all challenges
+            const challengeIds = allChallenges.map(c => c.id);
+            await loadCheckInsForChallenges(challengeIds);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [loadCheckInsForChallenges]);
 
     useFocusEffect(
         useCallback(() => {
@@ -142,7 +160,7 @@ export default function RankingScreen() {
         }
     };
 
-    const renderRankingItem = (item: UserRanking, index: number, allRankings: UserRanking[]) => {
+    const renderRankingItem = (item: UserRanking, index: number, allRankings: UserRanking[], challenge: Challenge) => {
         const isCurrentUser = item.userId === currentUser?.id;
         const prevUser = index > 0 ? allRankings[index - 1] : null;
         const pointDiff = prevUser ? prevUser.totalAura - item.totalAura : null;
@@ -181,6 +199,13 @@ export default function RankingScreen() {
                             {displayName}
                         </Text>
                         {isCurrentUser && <Text style={styles.youBadge}>{t('ranking.you')}</Text>}
+                        {/* Aura indicator */}
+                        {item.auraState && (
+                            <AuraIndicator
+                                auraState={item.auraState as any}
+                                size="small"
+                            />
+                        )}
                         {/* Ranking change indicator */}
                         {(item.previousRank !== undefined && item.previousRank !== null) && (
                             <RankingChangeIndicator
@@ -193,9 +218,18 @@ export default function RankingScreen() {
                     <View style={styles.statsContainer}>
                         <View style={styles.pointsRow}>
                             <Text style={styles.points}>{item.totalAura} {t('common.pts')}</Text>
-                            <Text style={styles.checks}> • {item.count} {t('ranking.checks')}</Text>
+                            {(!challenge.isLongTerm || !(item as any).isCompleted) && (
+                                <Text style={styles.checks}>
+                                    • {item.count} {challenge.isLongTerm ? t('home.nudge') : t('ranking.checks')}
+                                </Text>
+                            )}
                         </View>
-                        {pointDiff !== null && pointDiff > 0 && (
+                        {(item as any).isCompleted && (
+                            <Text style={styles.completedDate}>
+                                {t('home.completedOn', { date: new Date((item as any).completedAt).toLocaleDateString() })}
+                            </Text>
+                        )}
+                        {pointDiff !== null && pointDiff > 0 && !challenge.isLongTerm && (
                             <Text style={styles.pointDiff}>{t('ranking.toNext', { diff: pointDiff })}</Text>
                         )}
                     </View>
@@ -223,9 +257,22 @@ export default function RankingScreen() {
                         </Text>
                     </View>
                 )}
+
+                {/* Social Context */}
+                {currentUser && (
+                    <View style={{ marginBottom: spacing.m, paddingHorizontal: spacing.s }}>
+                        <SocialContext
+                            challengeId={item.id}
+                            currentUserId={currentUser.id}
+                            totalParticipants={item.participantCount || 1}
+                            isLongTerm={item.isLongTerm}
+                        />
+                    </View>
+                )}
+
                 <View style={styles.rankingContainer}>
                     {rankings[item.id]?.length > 0 ? (
-                        rankings[item.id].slice(0, 5).map((r, i) => renderRankingItem(r, i, rankings[item.id]))
+                        rankings[item.id].slice(0, 5).map((r, i) => renderRankingItem(r, i, rankings[item.id], item))
                     ) : (
                         <Text style={styles.noData}>{t('ranking.noData')}</Text>
                     )}
@@ -408,5 +455,11 @@ const styles = StyleSheet.create({
         ...typography.bodySmall,
         fontWeight: '600',
         textAlign: 'center',
+    },
+    completedDate: {
+        ...typography.caption,
+        color: colors.status.success,
+        fontStyle: 'italic',
+        marginTop: 2,
     },
 });

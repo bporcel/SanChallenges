@@ -49,10 +49,11 @@ export const colors = {
         broken: '#475569', // Slate 600 - broken streak
     },
     aura: {
-        low: '#3B82F6', // Blue (Genin)
-        mid: '#10B981', // Green (Chunin)
-        high: '#F59E0B', // Gold (Jonin)
-        godly: '#8B5CF6', // Purple (Hokage)
-        ultimate: '#EF4444', // Red (Berserk/Super Saiyan)
+        inactive: '#64748B',   // Slate 500 - Gray, dormant
+        weak: '#3B82F6',       // Blue 500 - Starting out
+        stable: '#10B981',     // Emerald 500 - Consistent
+        strong: '#F97316',     // Orange 500 - Committed
+        legendary: '#A855F7',   // Purple 500 - Elite
+        legendaryGlow: '#FBBF24', // Gold accent for legendary animation
     }
 };

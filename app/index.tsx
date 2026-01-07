@@ -19,10 +19,12 @@ import { GoalProgress } from '../src/ui/components/GoalProgress';
 import { SocialContext } from '../src/ui/components/SocialContext';
 import { CheckCelebration } from '../src/ui/components/CheckCelebration';
 import { AuraBadge } from '../src/ui/components/AuraBadge';
+import { SocialDataProvider, useSocialData } from '../src/ui/components/SocialDataContext';
 import { colors } from '../src/ui/theme/colors';
 import { spacing, layout } from '../src/ui/theme/spacing';
 import { typography } from '../src/ui/theme/typography';
-import { GamificationService } from '../src/domain/services/GamificationService';
+import { GamificationService, AURA_REWARDS } from '../src/domain/services/GamificationService';
+import { AuraService } from '../src/domain/services/AuraService';
 import { t } from '../src/i18n/i18n';
 
 
@@ -38,6 +40,7 @@ export default function HomeScreen() {
     const [isEditNameVisible, setIsEditNameVisible] = useState(false);
     const [celebratingCheckId, setCelebratingCheckId] = useState<string | null>(null);
     const [participantCounts, setParticipantCounts] = useState<Record<string, number>>({});
+    const { loadCheckInsForChallenges } = useSocialData();
 
     const loadData = useCallback(async () => {
         const allChallenges = await ChallengeRepository.sync();
@@ -50,7 +53,6 @@ export default function HomeScreen() {
         const today = dateService.getToday();
         const checks: Record<string, boolean> = {};
         const currentStreaks: Record<string, number> = {};
-        let aura = 0;
 
         // Optimization: Fetch all checks once
         const allChecks = await CheckRepository.getAll();
@@ -60,28 +62,28 @@ export default function HomeScreen() {
             const isChecked = challengeChecks.some((c) => c.date === today && c.completed);
             checks[challenge.id] = isChecked;
 
-            const completedChecks = challengeChecks.filter(c => c.completed);
-            currentStreaks[challenge.id] = GamificationService.calculateStreak(challengeChecks);
-            aura += completedChecks.length * (challenge.points || 0);
+            if (challenge.isLongTerm) {
+                currentStreaks[challenge.id] = 0;
+            } else {
+                currentStreaks[challenge.id] = GamificationService.calculateStreak(challengeChecks);
+            }
         }
 
         setCheckedToday(checks);
         setStreaks(currentStreaks);
-        setTotalAura(aura);
+        setTotalAura(GamificationService.calculateTotalAura(allChallenges, allChecks));
 
-        // Load participant counts for social context
+        // Participant counts are now provided by the server in the challenge sync
         const counts: Record<string, number> = {};
         for (const challenge of allChallenges) {
-            // Estimate participant count from ranking data
-            try {
-                const ranking = await CheckRepository.getRanking(challenge.id);
-                counts[challenge.id] = ranking.length;
-            } catch (e) {
-                counts[challenge.id] = 1; // At least the user
-            }
+            counts[challenge.id] = challenge.participantCount || 1;
         }
         setParticipantCounts(counts);
-    }, []);
+
+        // Bulk-fetch social context data for all challenges
+        const challengeIds = allChallenges.map(c => c.id);
+        await loadCheckInsForChallenges(challengeIds);
+    }, [loadCheckInsForChallenges]);
 
     useFocusEffect(
         useCallback(() => {
@@ -162,9 +164,71 @@ export default function HomeScreen() {
         loadData();
     };
 
+    const handleComplete = async (challengeId: string) => {
+        Alert.alert(
+            t('home.completeTitle'),
+            t('home.completeMessage'),
+            [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                    text: t('home.complete'),
+                    style: 'default',
+                    onPress: async () => {
+                        try {
+                            // Show celebration
+                            setCelebratingCheckId(challengeId);
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+                            // Optimistic UI update
+                            const challenge = challenges.find(c => c.id === challengeId);
+                            if (challenge) {
+                                setTotalAura(prev => prev + (challenge.points || 0));
+                                setChallenges(prev => prev.map(c =>
+                                    c.id === challengeId ? { ...c, completedAt: Date.now() } : c
+                                ));
+                            }
+
+                            // Complete on server
+                            await ChallengeRepository.complete(challengeId);
+
+                            // Reload to show completion and refresh social context
+                            await loadData();
+                        } catch (e: any) {
+                            Alert.alert(t('common.error'), e.message);
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleNudge = async (challengeId: string) => {
+        const today = dateService.getToday();
+
+        // Optimistic UI - just create a check (nudge)
+        try {
+            await CheckRepository.create({
+                id: Crypto.randomUUID(),
+                challengeId,
+                date: today,
+                completed: true,
+            });
+
+            // Subtle haptic feedback
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+            // Reload data to refresh social context
+            loadData();
+        } catch (e) {
+            console.error('Failed to nudge:', e);
+        }
+    };
+
     const renderItem = ({ item }: { item: Challenge }) => {
         const isOwner = user?.id === item.creatorId;
         const isPrivateChallenge = item.isPrivate === true;
+        const isLongTerm = item.isLongTerm === true;
+        const isCompleted = item.completedAt != null;
         const canCheck = !isPrivateChallenge || isOwner;
 
         // Calculate current day from challenge creation
@@ -194,8 +258,21 @@ export default function HomeScreen() {
                                     <Text style={styles.privateBadgeText}>{t('home.privateBadge')}</Text>
                                 </View>
                             )}
+                            {isLongTerm && (
+                                <View style={styles.longTermBadge}>
+                                    <Ionicons name="flag" size={10} color={colors.text.inverse} />
+                                    <Text style={styles.privateBadgeText}>{t('home.longTermBadge')}</Text>
+                                </View>
+                            )}
+                            {isCompleted && (
+                                <View style={styles.completedBadge}>
+                                    <Text style={styles.completedBadgeText}>{t('home.completed')}</Text>
+                                </View>
+                            )}
                             <View style={styles.auraBadge}>
-                                <Text style={styles.auraText}>{item.points} {t('common.pts')}</Text>
+                                <Text style={styles.auraText}>
+                                    {isLongTerm ? `+${item.points}` : `+${AURA_REWARDS.DAILY_CHECK}`} {t('common.pts')}
+                                </Text>
                             </View>
                         </View>
                     </View>
@@ -216,13 +293,14 @@ export default function HomeScreen() {
                                 challengeId={item.id}
                                 currentUserId={user.id}
                                 totalParticipants={participantCounts[item.id] || 1}
+                                isLongTerm={item.isLongTerm}
                             />
                         </View>
                     )}
                 </View>
 
                 <View style={styles.cardStats}>
-                    <StreakBadge streak={streaks[item.id] || 0} />
+                    {!isLongTerm && <StreakBadge streak={streaks[item.id] || 0} />}
                     <Text style={styles.inviteCodeSubtle}>{t('home.code', { code: item.inviteCode })}</Text>
                 </View>
 
@@ -239,14 +317,39 @@ export default function HomeScreen() {
                         style={styles.deleteButton}
                         textStyle={{ color: colors.status.error }}
                     />
-                    <Button
-                        title={checkedToday[item.id] ? t('common.undo') : t('common.check')}
-                        variant={checkedToday[item.id] ? 'secondary' : 'primary'}
-                        size="small"
-                        onPress={() => handleCheck(item.id)}
-                        style={!canCheck ? [styles.checkButton, styles.disabledButton] : styles.checkButton}
-                        disabled={!canCheck}
-                    />
+                    {isLongTerm ? (
+                        // Long-term challenge actions
+                        <>
+                            {!isCompleted && (
+                                <>
+                                    <Button
+                                        title={t('home.nudge')}
+                                        variant="ghost"
+                                        size="small"
+                                        onPress={() => handleNudge(item.id)}
+                                        style={styles.nudgeButton}
+                                    />
+                                    <Button
+                                        title={t('home.complete')}
+                                        variant="primary"
+                                        size="small"
+                                        onPress={() => handleComplete(item.id)}
+                                        style={styles.checkButton}
+                                    />
+                                </>
+                            )}
+                        </>
+                    ) : (
+                        // Daily challenge actions
+                        <Button
+                            title={checkedToday[item.id] ? t('common.undo') : t('common.check')}
+                            variant={checkedToday[item.id] ? 'secondary' : 'primary'}
+                            size="small"
+                            onPress={() => handleCheck(item.id)}
+                            style={!canCheck ? [styles.checkButton, styles.disabledButton] : styles.checkButton}
+                            disabled={!canCheck}
+                        />
+                    )}
                 </View>
             </Card>
         );
@@ -268,7 +371,11 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                     </View>
                     <View style={styles.headerRight}>
-                        <AuraBadge value={totalAura} label={t('common.pts')} />
+                        <AuraBadge
+                            value={totalAura}
+                            label={t('common.pts')}
+                            auraState={user.auraState || AuraService.getAuraState(user.currentStreak || 0)}
+                        />
                     </View>
                 </View>
             )}
@@ -317,6 +424,7 @@ export default function HomeScreen() {
         </SafeAreaView>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: {
@@ -469,13 +577,13 @@ const styles = StyleSheet.create({
         lineHeight: 12,
     },
     auraBadge: {
-        backgroundColor: colors.aura.mid,
+        backgroundColor: colors.aura.stable,
         paddingHorizontal: spacing.s,
         paddingVertical: 2,
         borderRadius: layout.borderRadius.s,
         height: 20, // Match privateBadge height
         justifyContent: 'center',
-        shadowColor: colors.aura.mid,
+        shadowColor: colors.aura.stable,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.5,
         shadowRadius: 4,
@@ -505,6 +613,34 @@ const styles = StyleSheet.create({
     },
     socialContextContainer: {
         marginTop: spacing.xs,
+    },
+    longTermBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.xs,
+        paddingVertical: 2,
+        borderRadius: layout.borderRadius.s,
+        gap: 2,
+        height: 20,
+    },
+    completedBadge: {
+        backgroundColor: colors.status.success,
+        paddingHorizontal: spacing.xs,
+        paddingVertical: 2,
+        borderRadius: layout.borderRadius.s,
+        height: 20,
+        justifyContent: 'center',
+    },
+    completedBadgeText: {
+        ...typography.caption,
+        color: colors.text.inverse,
+        fontSize: 10,
+        fontWeight: 'bold',
+        lineHeight: 12,
+    },
+    nudgeButton: {
+        paddingHorizontal: spacing.s,
     },
 });
 

@@ -1,13 +1,18 @@
 # API Contract
 
 ## Endpoints
-POST /challenges
-POST /challenges/join
-GET /challenges/{id}
-POST /checks
-GET /challenges/{id}/ranking (returns currentRank and previousRank for tendency)
-GET /challenges/{id}/checks/today (returns userNames of participants who checked today)
-DELETE /challenges/{id}/participants/{userId}
+- `POST /challenges` - Create challenge (accepts `isLongTerm` field)
+- `POST /challenges/join` - Join challenge
+- `GET /challenges/{id}` - Get challenge details (includes `isLongTerm` and completion status)
+- `GET /challenges/{id}/ranking` - Returns currentRank and previousRank for tendency (different logic for long-term)
+- `GET /challenges/{id}/checks/today` - Returns userNames of participants who checked today
+- `POST /challenges/{id}/complete` - Mark long-term challenge as complete for current user
+- `DELETE /challenges/{id}/participants/{userId}` - Leave/Delete challenge
+- `GET /users/{userId}/challenges` - Get user challenges (includes `participantCount`, `isLongTerm`, `completedAt`)
+- `POST /users` - Update user profile (displayName)
+- `POST /checks` - Sync daily check (or nudge for long-term challenges)
+- `POST /checks/today/bulk` - Get today's checks for multiple challenges (bulk)
+- `GET /health` - Server health check
 
 ## Notas
 - userId enviado desde cliente

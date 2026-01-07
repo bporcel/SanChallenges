@@ -11,6 +11,7 @@ import { colors } from '../src/ui/theme/colors';
 import { spacing, layout } from '../src/ui/theme/spacing';
 import { typography } from '../src/ui/theme/typography';
 import { LoadingOverlay } from '../src/ui/components/LoadingOverlay';
+import { GamificationService, AURA_REWARDS } from '../src/domain/services/GamificationService';
 import { t } from '../src/i18n/i18n';
 
 export default function CreateChallengeScreen() {
@@ -18,9 +19,9 @@ export default function CreateChallengeScreen() {
     const insets = useSafeAreaInsets();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [aura, setAura] = useState('');
     const [duration, setDuration] = useState('30');
     const [isPrivate, setIsPrivate] = useState(false);
+    const [isLongTerm, setIsLongTerm] = useState(false);
 
     const [loading, setLoading] = useState(false);
     const handleCreate = async () => {
@@ -31,12 +32,17 @@ export default function CreateChallengeScreen() {
 
         setLoading(true);
         try {
+            const calculatedPoints = isLongTerm
+                ? GamificationService.calculateCompletionPoints(parseInt(duration) || 30)
+                : AURA_REWARDS.DAILY_CHECK;
+
             const newChallenge = {
                 title,
                 description,
-                points: parseInt(aura) || 0,
+                points: calculatedPoints,
                 duration: parseInt(duration) || 30,
                 isPrivate,
+                isLongTerm,
             };
 
             await ChallengeRepository.create(newChallenge);
@@ -99,17 +105,72 @@ export default function CreateChallengeScreen() {
                             />
                         </View>
 
+                        {/* Challenge Type Selector */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>{t('create.labelPoints')}</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={aura}
-                                onChangeText={setAura}
-                                placeholder={t('create.placeholderPoints')}
-                                placeholderTextColor={colors.text.tertiary}
-                                keyboardType="numeric"
-                            />
-                            <Text style={styles.helperText}>{t('create.helperPoints')}</Text>
+                            <Text style={styles.label}>{t('create.typeLabel')}</Text>
+                            <View style={styles.typeSelector}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.typeOption,
+                                        !isLongTerm && styles.typeOptionActive
+                                    ]}
+                                    onPress={() => setIsLongTerm(false)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons
+                                        name="calendar"
+                                        size={24}
+                                        color={!isLongTerm ? colors.primary : colors.text.tertiary}
+                                    />
+                                    <Text style={[
+                                        styles.typeOptionTitle,
+                                        !isLongTerm && styles.typeOptionTitleActive
+                                    ]}>{t('create.typeDaily')}</Text>
+                                    <Text style={styles.typeOptionDesc}>{t('create.typeDailyDesc')}</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.typeOption,
+                                        isLongTerm && styles.typeOptionActive
+                                    ]}
+                                    onPress={() => setIsLongTerm(true)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons
+                                        name="flag"
+                                        size={24}
+                                        color={isLongTerm ? colors.primary : colors.text.tertiary}
+                                    />
+                                    <Text style={[
+                                        styles.typeOptionTitle,
+                                        isLongTerm && styles.typeOptionTitleActive
+                                    ]}>{t('create.typeLongTerm')}</Text>
+                                    <Text style={styles.typeOptionDesc}>{t('create.typeLongTermDesc')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Aura Rewards</Text>
+                            <View style={styles.rewardPreview}>
+                                <View style={styles.rewardItem}>
+                                    <Ionicons name="flash" size={16} color={colors.aura.stable} />
+                                    <Text style={styles.rewardText}>
+                                        {isLongTerm
+                                            ? `+${AURA_REWARDS.LONG_TERM_NUDGE} pts per daily work`
+                                            : `+${AURA_REWARDS.DAILY_CHECK} pts per check-in`}
+                                    </Text>
+                                </View>
+                                {isLongTerm && (
+                                    <View style={styles.rewardItem}>
+                                        <Ionicons name="trophy" size={16} color={colors.aura.legendary} />
+                                        <Text style={styles.rewardText}>
+                                            +{GamificationService.calculateCompletionPoints(parseInt(duration) || 30)} pts on completion
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
                         </View>
 
                         <View style={styles.inputGroup}>
@@ -242,5 +303,55 @@ const styles = StyleSheet.create({
     switchLabelContainer: {
         flex: 1,
         marginRight: spacing.m,
+    },
+    typeSelector: {
+        flexDirection: 'row',
+        gap: spacing.m,
+    },
+    typeOption: {
+        flex: 1,
+        backgroundColor: colors.background,
+        borderWidth: 2,
+        borderColor: colors.border,
+        borderRadius: layout.borderRadius.m,
+        padding: spacing.m,
+        alignItems: 'center',
+        gap: spacing.xs,
+    },
+    typeOptionActive: {
+        borderColor: colors.primary,
+        backgroundColor: colors.primary + '10',
+    },
+    typeOptionTitle: {
+        ...typography.body,
+        fontWeight: '600',
+        color: colors.text.secondary,
+        textAlign: 'center',
+    },
+    typeOptionTitleActive: {
+        color: colors.primary,
+    },
+    typeOptionDesc: {
+        ...typography.caption,
+        color: colors.text.tertiary,
+        textAlign: 'center',
+    },
+    rewardPreview: {
+        backgroundColor: colors.background,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: layout.borderRadius.m,
+        padding: spacing.m,
+        gap: spacing.s,
+    },
+    rewardItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.s,
+    },
+    rewardText: {
+        ...typography.bodySmall,
+        color: colors.text.primary,
+        fontWeight: '600',
     },
 });

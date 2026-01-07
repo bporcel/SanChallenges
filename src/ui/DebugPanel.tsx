@@ -11,6 +11,9 @@ import { CheckCelebration } from './components/CheckCelebration';
 import { StreakBadge } from './components/StreakBadge';
 import { RankingChangeIndicator } from './components/RankingChangeIndicator';
 import { SocialContext } from './components/SocialContext';
+import { AuraIndicator } from './components/AuraIndicator';
+import { AuraService } from '../domain/services/AuraService';
+import { AuraState } from '../domain/models/AuraState';
 
 export const DebugPanel = () => {
     const [isVisible, setIsVisible] = useState(false);
@@ -19,6 +22,7 @@ export const DebugPanel = () => {
     const [dateOffset, setDateOffset] = useState(dateService.getOffset());
     const [showTestCelebration, setShowTestCelebration] = useState(false);
     const [testStreak, setTestStreak] = useState(5);
+    const [testAuraStreak, setTestAuraStreak] = useState(0);
 
     const clearRankingHistory = async () => {
         try {
@@ -251,6 +255,39 @@ export const DebugPanel = () => {
                             <StreakBadge streak={testStreak} />
                             <TouchableOpacity onPress={() => setTestStreak(testStreak + 1)} style={styles.quickButton}>
                                 <Text style={styles.quickButtonText}>+1</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.subSectionTitle}>Aura System</Text>
+                        <View style={styles.debugRow}>
+                            <TouchableOpacity onPress={() => setTestAuraStreak(Math.max(0, testAuraStreak - 1))} style={styles.quickButton}>
+                                <Text style={styles.quickButtonText}>-1</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setTestAuraStreak(Math.max(0, testAuraStreak - 7))} style={styles.quickButton}>
+                                <Text style={styles.quickButtonText}>-7</Text>
+                            </TouchableOpacity>
+
+                            <View style={{ paddingHorizontal: 20, alignItems: 'center' }}>
+                                <AuraIndicator auraState={AuraService.getAuraState(testAuraStreak)} size="large" showLabel />
+                                <Text style={{ fontSize: 10, color: '#666', marginTop: 4 }}>Streak: {testAuraStreak}</Text>
+                            </View>
+
+                            <TouchableOpacity onPress={() => setTestAuraStreak(testAuraStreak + 1)} style={styles.quickButton}>
+                                <Text style={styles.quickButtonText}>+1</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setTestAuraStreak(testAuraStreak + 7)} style={styles.quickButton}>
+                                <Text style={styles.quickButtonText}>+7</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.quickButtons}>
+                            <TouchableOpacity onPress={() => setTestAuraStreak(0)} style={styles.quickButton}>
+                                <Text style={styles.quickButtonText}>Reset (Inactive)</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setTestAuraStreak(3)} style={styles.quickButton}>
+                                <Text style={styles.quickButtonText}>Set Stable (3)</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setTestAuraStreak(14)} style={styles.quickButton}>
+                                <Text style={styles.quickButtonText}>Set Legendary (14)</Text>
                             </TouchableOpacity>
                         </View>
 

@@ -5,10 +5,17 @@
 - 2026-01-01: Ranking por reto, no global
 - 2026-01-03: Eliminación de retos local (el usuario puede quitarse de un reto sin borrarlo del servidor)
 - 2026-01-04: Migración a PostgreSQL + Prisma para persistencia robusta en producción (Render)
-- 2026-01-05: Implementación del sistema de **Aura** (temática anime) para gamificación
+- 2026-01-05: Implementación inicial del sistema de puntos con temática anime
+- 2026-01-07: Rediseño del sistema de **Aura** como reputación global basada en consistencia y rachas (5 estados: Inactive, Weak, Stable, Strong, Legendary), con degradación rápida al romper rachas y representación puramente visual
 - 2026-01-06: Implementación de **duración dinámica** para retos (configurable por el usuario)
 - 2026-01-06: Panel de Debug mejorado para testing de red y UX (haptics, celebraciones)
 - 2026-01-06: Contexto social en tarjetas (quién ha marcado hoy) con nombres reales
 - 2026-01-06: Generador de nombres por defecto con temática anime (Shadow Hokage, etc.)
 - 2026-01-06: Localización completa (i18n) para soporte de múltiples idiomas (ES/EN)
 - 2026-01-06: Cálculo de tendencia de ranking (subidas/bajadas) en el servidor para consistencia entre usuarios
+- 2026-01-07: Migración a arquitectura modular en el servidor (rutas, controladores, utilidades separadas)
+- 2026-01-07: Implementación de validación de entrada con **Zod** para robustez y seguridad
+- 2026-01-07: Adopción de **Pino** para logging estructurado (JSON en producción)
+- 2026-01-07: Implementación de **ErrorBoundary** global en el cliente para manejo de crashes
+- 2026-01-07: Optimización de red mediante **bulk endpoints** y pre-fetching de datos sociales
+- 2026-01-07: Reubicación de Prisma a `server/prisma` para un backend autocontenido

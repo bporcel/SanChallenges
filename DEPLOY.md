@@ -44,13 +44,14 @@ We will use a "Best of Breed" free tier strategy:
     - **Branch**: `main` (or your production branch)
     - **Runtime**: **Docker**
     - **Root Directory**: `.` (This is the build context)
-    - **Dockerfile Path**: `server/Dockerfile`
+    - **Dockerfile Path**: `server/Dockerfile` (Note: The build context is the root directory)
     - **Instance Type**: Free
     - **Health Check Path**: `/health` (This ensures Render knows when your app is ready)
 5.  **Environment Variables**:
     - Scroll down to "Environment Variables".
     - Add Key: `DATABASE_URL`
     - Add Value: Paste the **Neon Connection String** from Step 1.
+    - *Note: The server now uses modular routes and structured logging. The `prisma` folder is located inside `server/prisma`.*
     - *Note: You might need to append `?sslmode=require` to the connection string if it's not there, but Neon usually handles this.*
 6.  Click **"Create Web Service"**.
 7.  Wait for the build and deployment to finish.

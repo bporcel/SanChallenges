@@ -8,10 +8,12 @@ Permitir que varios usuarios compartan y sigan retos comunes desde distintas ins
 - Invitación a retos mediante código o enlace
 - Check diario por usuario
 - Deshacer check diario
+- Retos de largo plazo (goals que se completan una vez)
+- Nudges diarios opcionales para mantener motivación (sin penalizaciones)
 - Ranking por reto
 - Eliminar reto
 - Retos privados (solo creador puede marcar)
-- Sistema de Aura con rangos anime (Hokage, Jonin, etc.)
+- Sistema de Aura global (reputación visual basada en consistencia y rachas)
 - Duración de retos dinámica (configurable al crear)
 - Contexto social (ver quién ha marcado hoy por nombre)
 - Identidad automática estilo anime (Shadow Hokage, etc.)
@@ -25,11 +27,21 @@ Permitir que varios usuarios compartan y sigan retos comunes desde distintas ins
 - Validación automática
 
 ## Flujo general
-1. Usuario crea reto
+
+### Retos diarios
+1. Usuario crea reto diario
 2. Genera código de invitación
 3. Amigos se unen al reto
 4. Cada usuario marca su check diario
 5. Ranking se actualiza
+
+### Retos de largo plazo
+1. Usuario crea reto de largo plazo (goal)
+2. Genera código de invitación
+3. Amigos se unen al reto
+4. Usuarios trabajan en el objetivo (pueden marcar nudges opcionales)
+5. Usuario marca como completado cuando alcanza el objetivo
+6. Ranking muestra usuarios completados primero
 
 ## Prioridades
 1. Simplicidad
