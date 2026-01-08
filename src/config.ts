@@ -41,4 +41,6 @@ export const Config = {
 
 getApiUrl().then(url => {
     currentApiUrl = url;
+}).catch(() => {
+    // Expected during static export
 });

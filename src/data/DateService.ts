@@ -18,9 +18,14 @@ class DateService {
     }
 
     private async loadOffset() {
-        const saved = await AsyncStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            this.offsetDays = parseInt(saved, 10);
+        try {
+            const saved = await AsyncStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                this.offsetDays = parseInt(saved, 10);
+            }
+        } catch (e) {
+            // Ignore errors during static export
+            console.log('DateService: Could not load offset (expected during build)');
         }
     }
 

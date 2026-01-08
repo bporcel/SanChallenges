@@ -27,7 +27,21 @@
       "usesCleartextTraffic": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "static",
+      "config": {
+        "pwa": {
+          "name": "SanChallenges",
+          "shortName": "SanChallenges",
+          "description": "Challenge your friends and track your progress.",
+          "backgroundColor": "#000000",
+          "themeColor": "#6366f1",
+          "display": "standalone",
+          "orientation": "portrait",
+          "icon": "./assets/icon.png"
+        }
+      }
     },
     "plugins": [
       "expo-router"

@@ -16,10 +16,10 @@ App móvil Android para trackear retos compartidos entre amigos, sincronizada on
 Grupos pequeños de amigos que quieren compartir retos sin fricción ni cuentas.
 
 ## Stack
-- **Frontend**: React Native (Expo)
+- **Frontend**: React Native (Expo) + PWA support for iPhone
 - **Backend**: Node.js + Express
 - **Database**: PostgreSQL + Prisma
-- **Hosting**: Render (Docker)
+- **Hosting**: Render (Docker) + Render Static Sites (Web/PWA)
 - **Coste objetivo**: 0 (Free Tier)
 
 ## Ejecutar en local

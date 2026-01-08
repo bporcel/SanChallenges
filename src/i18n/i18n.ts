@@ -32,11 +32,16 @@ const getDeviceLocale = (): string => {
 
 // Initialize locale
 export const initLocale = async () => {
-    const saved = await AsyncStorage.getItem(STORAGE_KEY);
-    if (saved && locales[saved]) {
-        currentLocale = saved;
-    } else {
-        currentLocale = getDeviceLocale() === 'es' ? 'es' : 'en';
+    try {
+        const saved = await AsyncStorage.getItem(STORAGE_KEY);
+        if (saved && locales[saved]) {
+            currentLocale = saved;
+        } else {
+            currentLocale = getDeviceLocale() === 'es' ? 'es' : 'en';
+        }
+    } catch (e) {
+        // Fallback to default during static export
+        currentLocale = 'en';
     }
 };
 

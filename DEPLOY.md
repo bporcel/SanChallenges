@@ -89,6 +89,35 @@ We will use a "Best of Breed" free tier strategy:
     - Once finished, EAS will provide a link to download the `.apk` (or `.aab` for Play Store).
     - Install it on your device to test.
 
+---
+
+## Step 4: Deploy for iPhone (PWA)
+
+Since we are avoiding the App Store, we will deploy the app as a **Progressive Web App (PWA)**.
+
+1.  **Build the Web Bundle**:
+    - Run `npm run build:web`.
+    - This will create a `dist` folder containing your web app.
+
+2.  **Deploy to Render (Static Site)**:
+    - Log in to **Render Dashboard**.
+    - Click **"New +"** -> **"Static Site"**.
+    - Connect your **GitHub repository**.
+    - **Configure the Service**:
+        - **Name**: `sanchallenges-web`
+        - **Build Command**: `npm install && npm run build:web`
+        - **Publish Directory**: `dist`
+    - **Environment Variables**:
+        - Add Key: `EXPO_PUBLIC_API_URL`
+        - Add Value: Your **Render Backend URL** (e.g., `https://sanchallenges-api.onrender.com`).
+    - Click **"Create Static Site"**.
+
+3.  **Install on iPhone**:
+    - Open the **Render Static Site URL** in **Safari** on the iPhone.
+    - Tap the **Share** icon (the square with an arrow pointing up).
+    - Scroll down and tap **"Add to Home Screen"**.
+    - The app will now appear on the home screen with its own icon and run without the browser UI!
+
 ## Verification
 
 1.  Open the installed app on your phone.
