@@ -368,8 +368,8 @@ export default function HomeScreen() {
                             onPress={() => setIsEditNameVisible(true)}
                             activeOpacity={0.7}
                         >
-                            <Text style={styles.greeting}>{t('home.greeting')}</Text>
-                            <Text style={styles.userName}>{user.displayName}</Text>
+                            <Text style={styles.greeting} numberOfLines={1}>{t('home.greeting')}</Text>
+                            <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">{user.displayName}</Text>
                             <Ionicons name="pencil-outline" size={14} color={colors.primary} style={styles.editIcon} />
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -473,8 +473,8 @@ const getStyles = (colors: any, layout: any) => StyleSheet.create({
     },
     userNameContainer: {
         flexDirection: 'row',
-        alignItems: 'baseline',
-        flexWrap: 'wrap',
+        alignItems: 'center',
+        flexShrink: 1,
     },
     userName: {
         ...typography.h2,
@@ -489,10 +489,13 @@ const getStyles = (colors: any, layout: any) => StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
+        gap: spacing.s,
     },
     headerRight: {
+        flexShrink: 0,
         alignItems: 'flex-end',
         justifyContent: 'center',
+        marginLeft: spacing.s,
     },
     statsHeaderButton: {
         flexDirection: 'row',
@@ -508,7 +511,6 @@ const getStyles = (colors: any, layout: any) => StyleSheet.create({
         borderColor: colors.border,
         alignItems: 'center',
         justifyContent: 'center',
-        marginLeft: spacing.s,
         ...layout.shadows.small,
     },
     statsIconContainer: {
