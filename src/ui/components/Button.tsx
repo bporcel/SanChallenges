@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator, StyleProp } from 'react-native';
-import { colors } from '../theme/colors';
-import { layout, spacing } from '../theme/spacing';
+import { useColors } from '../theme/colors';
+import { useLayout, spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 
 interface ButtonProps {
@@ -25,6 +25,9 @@ export const Button: React.FC<ButtonProps> = ({
     style,
     textStyle
 }) => {
+    const colors = useColors();
+    const layout = useLayout();
+
     const getBackgroundColor = () => {
         if (disabled) return colors.text.tertiary;
         switch (variant) {
@@ -57,6 +60,8 @@ export const Button: React.FC<ButtonProps> = ({
         }
     };
 
+    const styles = getStyles(colors, layout);
+
     return (
         <TouchableOpacity
             style={[
@@ -87,12 +92,13 @@ export const Button: React.FC<ButtonProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, layout: any) => StyleSheet.create({
     button: {
         borderRadius: layout.borderRadius.m,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
+        overflow: 'hidden',
     },
     text: {
         ...typography.button,

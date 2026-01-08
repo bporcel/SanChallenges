@@ -7,13 +7,16 @@ import * as Haptics from 'expo-haptics';
 import { ChallengeRepository } from '../src/data/repositories/ChallengeRepository';
 import { Button } from '../src/ui/components/Button';
 import { Card } from '../src/ui/components/Card';
-import { colors } from '../src/ui/theme/colors';
-import { spacing, layout } from '../src/ui/theme/spacing';
+import { useColors } from '../src/ui/theme/colors';
+import { spacing, useLayout } from '../src/ui/theme/spacing';
 import { typography } from '../src/ui/theme/typography';
 import { LoadingOverlay } from '../src/ui/components/LoadingOverlay';
 import { t } from '../src/i18n/i18n';
 
 export default function JoinChallengeScreen() {
+    const colors = useColors();
+    const layout = useLayout();
+    const styles = getStyles(colors, layout);
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [inviteCode, setInviteCode] = useState('');
@@ -101,7 +104,7 @@ export default function JoinChallengeScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, layout: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

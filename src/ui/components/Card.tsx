@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
-import { colors } from '../theme/colors';
-import { layout, spacing } from '../theme/spacing';
+import { useColors } from '../theme/colors';
+import { useLayout, spacing } from '../theme/spacing';
 
 interface CardProps {
     children: React.ReactNode;
@@ -16,6 +16,9 @@ export const Card: React.FC<CardProps> = ({
     onPress,
     variant = 'elevated'
 }) => {
+    const colors = useColors();
+    const layout = useLayout();
+    const styles = getStyles(colors, layout);
     const cardStyles = [
         styles.card,
         variant === 'elevated' && styles.elevated,
@@ -42,7 +45,7 @@ export const Card: React.FC<CardProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, layout: any) => StyleSheet.create({
     card: {
         backgroundColor: colors.surface,
         borderRadius: layout.borderRadius.l,

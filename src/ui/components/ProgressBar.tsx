@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
-import { colors } from '../theme/colors';
-import { layout } from '../theme/spacing';
+import { useColors } from '../theme/colors';
+import { useLayout } from '../theme/spacing';
 
 interface ProgressBarProps {
     progress: number; // 0 to 1
@@ -11,9 +11,11 @@ interface ProgressBarProps {
 
 export const ProgressBar: React.FC<ProgressBarProps> = ({
     progress,
-    color = colors.secondary,
+    color,
     height = 6
 }) => {
+    const colors = useColors();
+    const layout = useLayout();
     const animatedWidth = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -29,13 +31,15 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
         outputRange: ['0%', '100%'],
     });
 
+    const styles = getStyles(colors, layout);
+
     return (
         <View style={[styles.container, { height }]}>
             <Animated.View
                 style={[
                     styles.fill,
                     {
-                        backgroundColor: color,
+                        backgroundColor: color || colors.secondary,
                         width: widthInterpolated,
                     },
                 ]}
@@ -44,7 +48,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, layout: any) => StyleSheet.create({
     container: {
         width: '100%',
         backgroundColor: colors.border,

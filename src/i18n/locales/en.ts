@@ -19,6 +19,7 @@ export const en = {
         createNew: 'Create New Challenge',
         joinChallenge: 'Join Challenge',
         viewRanking: 'View Ranking',
+        viewStats: '📊 Your Stats',
         streak: '🔥 {{count}} day streak',
         noStreak: '❄️ No streak',
         code: 'Code: {{code}}',
@@ -59,6 +60,10 @@ export const en = {
         typeLongTerm: 'Long-Term Goal',
         typeDailyDesc: 'Check daily to build streaks',
         typeLongTermDesc: 'Complete once when you achieve your goal',
+        errorDurationMin: 'Duration must be at least 7 days',
+        errorDurationMax: 'Duration cannot exceed 365 days',
+        quickMin: '7 days',
+        quickMax: '1 year',
     },
     join: {
         title: 'Join Challenge',
@@ -105,6 +110,31 @@ export const en = {
         stable: 'Stable',
         strong: 'Strong',
         legendary: 'Legendary',
+    },
+    stats: {
+        title: 'Your Stats',
+        subtitle: 'Year in Review {{year}}',
+        empty: 'Start a challenge to see your stats!',
+        challenges: {
+            title: 'Challenges',
+            participated: 'Joined',
+            completed: 'Completed',
+            abandoned: 'Abandoned',
+        },
+        consistency: {
+            title: 'Consistency',
+            totalChecks: 'Total Checks',
+            avgPerWeek: 'Avg / Week',
+            bestStreak: 'Best Streak',
+            missedDays: 'Missed Days',
+            bestMonth: '✨ Your best month was {{month}}',
+        },
+        aura: {
+            title: 'Aura Journey',
+            mostCommon: 'Your most common aura state',
+            longestStrong: 'Days at Strong+',
+            breaks: 'Streak Breaks',
+        },
     },
     debug: {
         button: 'DEBUG',
@@ -168,5 +198,12 @@ export const en = {
             retry: 'Retry',
             clearData: 'Clear All Data',
         },
+    },
+    theme: {
+        title: 'Select Theme',
+        default: 'Default Dark',
+        defaultDesc: 'Sleek indigo & slate dark mode',
+        minimalist: 'Minimalist',
+        minimalistDesc: 'Clean light mode with sage accents',
     },
 };

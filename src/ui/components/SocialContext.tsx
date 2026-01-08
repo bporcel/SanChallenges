@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Text, StyleSheet } from 'react-native';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { useSocialData } from './SocialDataContext';
 import { t } from '../../i18n/i18n';
@@ -16,6 +16,7 @@ export const SocialContext: React.FC<SocialContextProps> = ({
     challengeId,
     isLongTerm,
 }) => {
+    const colors = useColors();
     const [message, setMessage] = useState<string>('');
     const { checkInsData } = useSocialData();
 
@@ -57,10 +58,12 @@ export const SocialContext: React.FC<SocialContextProps> = ({
 
     if (!message) return null;
 
+    const styles = getStyles(colors);
+
     return <Text style={styles.text}>{message}</Text>;
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
     text: {
         ...typography.caption,
         color: colors.text.tertiary,

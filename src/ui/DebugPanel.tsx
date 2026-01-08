@@ -14,8 +14,10 @@ import { SocialContext } from './components/SocialContext';
 import { AuraIndicator } from './components/AuraIndicator';
 import { AuraService } from '../domain/services/AuraService';
 import { AuraState } from '../domain/models/AuraState';
+import { useTheme, ThemeType } from './theme/ThemeContext';
 
 export const DebugPanel = () => {
+    const { theme, setTheme } = useTheme();
     const [isVisible, setIsVisible] = useState(false);
     const [logs, setLogs] = useState(networkLogger.getLogs());
     const [apiUrl, setApiUrlState] = useState('');
@@ -123,6 +125,28 @@ export const DebugPanel = () => {
                 </View>
 
                 <ScrollView style={styles.content}>
+                    <View style={styles.configSection}>
+                        <Text style={styles.sectionTitle}>UI Theme</Text>
+                        <View style={styles.quickButtons}>
+                            <TouchableOpacity
+                                onPress={() => setTheme('default')}
+                                style={[styles.quickButton, theme === 'default' && styles.activeQuickButton]}
+                            >
+                                <Text style={[styles.quickButtonText, theme === 'default' && styles.activeQuickButtonText]}>
+                                    Default Dark
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setTheme('minimalist')}
+                                style={[styles.quickButton, theme === 'minimalist' && styles.activeQuickButton]}
+                            >
+                                <Text style={[styles.quickButtonText, theme === 'minimalist' && styles.activeQuickButtonText]}>
+                                    Minimalist
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
                     <View style={styles.configSection}>
                         <Text style={styles.sectionTitle}>{t('debug.language')}</Text>
                         <View style={styles.quickButtons}>

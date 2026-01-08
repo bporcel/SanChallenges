@@ -7,14 +7,17 @@ import * as Haptics from 'expo-haptics';
 import { ChallengeRepository } from '../src/data/repositories/ChallengeRepository';
 import { Button } from '../src/ui/components/Button';
 import { Card } from '../src/ui/components/Card';
-import { colors } from '../src/ui/theme/colors';
-import { spacing, layout } from '../src/ui/theme/spacing';
+import { useColors } from '../src/ui/theme/colors';
+import { spacing, useLayout } from '../src/ui/theme/spacing';
 import { typography } from '../src/ui/theme/typography';
 import { LoadingOverlay } from '../src/ui/components/LoadingOverlay';
 import { GamificationService, AURA_REWARDS } from '../src/domain/services/GamificationService';
 import { t } from '../src/i18n/i18n';
 
 export default function CreateChallengeScreen() {
+    const colors = useColors();
+    const layout = useLayout();
+    const styles = getStyles(colors, layout);
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [title, setTitle] = useState('');
@@ -27,6 +30,16 @@ export default function CreateChallengeScreen() {
     const handleCreate = async () => {
         if (!title) {
             Alert.alert(t('common.error'), t('create.errorTitleRequired'));
+            return;
+        }
+
+        const durationNum = parseInt(duration);
+        if (isNaN(durationNum) || durationNum < 7) {
+            Alert.alert(t('common.error'), t('create.errorDurationMin'));
+            return;
+        }
+        if (durationNum > 365) {
+            Alert.alert(t('common.error'), t('create.errorDurationMax'));
             return;
         }
 
@@ -175,15 +188,43 @@ export default function CreateChallengeScreen() {
 
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>{t('create.labelDuration')}</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={duration}
-                                onChangeText={setDuration}
-                                placeholder={t('create.placeholderDuration')}
-                                placeholderTextColor={colors.text.tertiary}
-                                keyboardType="numeric"
-                            />
-                            <Text style={styles.helperText}>{t('create.helperDuration')}</Text>
+                            <View style={styles.durationContainer}>
+                                <TextInput
+                                    style={[styles.input, { flex: 1 }]}
+                                    value={duration}
+                                    onChangeText={setDuration}
+                                    placeholder={t('create.placeholderDuration')}
+                                    placeholderTextColor={colors.text.tertiary}
+                                    keyboardType="numeric"
+                                />
+                                <View style={styles.quickDurationButtons}>
+                                    <TouchableOpacity
+                                        style={[styles.quickButton, duration === '7' && styles.quickButtonActive]}
+                                        onPress={() => {
+                                            setDuration('7');
+                                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                        }}
+                                    >
+                                        <Text style={[styles.quickButtonText, duration === '7' && styles.quickButtonTextActive]}>
+                                            {t('create.quickMin')}
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.quickButton, duration === '365' && styles.quickButtonActive]}
+                                        onPress={() => {
+                                            setDuration('365');
+                                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                        }}
+                                    >
+                                        <Text style={[styles.quickButtonText, duration === '365' && styles.quickButtonTextActive]}>
+                                            {t('create.quickMax')}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                            <Text style={styles.helperText}>
+                                {t('create.helperDuration')} (7 - 365)
+                            </Text>
                         </View>
 
                         <View style={styles.switchRow}>
@@ -222,7 +263,7 @@ export default function CreateChallengeScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, layout: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
@@ -353,5 +394,36 @@ const styles = StyleSheet.create({
         ...typography.bodySmall,
         color: colors.text.primary,
         fontWeight: '600',
+    },
+    durationContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.s,
+    },
+    quickDurationButtons: {
+        flexDirection: 'row',
+        gap: spacing.s,
+    },
+    quickButton: {
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        paddingHorizontal: spacing.s,
+        paddingVertical: spacing.s,
+        borderRadius: layout.borderRadius.s,
+        minWidth: 60,
+        alignItems: 'center',
+    },
+    quickButtonActive: {
+        borderColor: colors.primary,
+        backgroundColor: colors.primary + '10',
+    },
+    quickButtonText: {
+        ...typography.caption,
+        color: colors.text.secondary,
+        fontWeight: '600',
+    },
+    quickButtonTextActive: {
+        color: colors.primary,
     },
 });

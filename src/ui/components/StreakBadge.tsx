@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/colors';
 import { typography } from '../theme/typography';
-import { spacing } from '../theme/spacing';
+import { useLayout, spacing } from '../theme/spacing';
 import { t } from '../../i18n/i18n';
 
 interface StreakBadgeProps {
@@ -11,6 +11,8 @@ interface StreakBadgeProps {
 }
 
 export const StreakBadge: React.FC<StreakBadgeProps> = ({ streak, isBroken = false }) => {
+    const colors = useColors();
+    const layout = useLayout();
     const pulseAnim = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
@@ -74,30 +76,31 @@ export const StreakBadge: React.FC<StreakBadgeProps> = ({ streak, isBroken = fal
     };
 
     const style = getStreakStyle();
+    const componentStyles = getStyles(colors, layout);
 
     return (
         <Animated.View
             style={[
-                styles.container,
+                componentStyles.container,
                 { backgroundColor: style.backgroundColor },
                 !isBroken && streak > 0 && { transform: [{ scale: pulseAnim }] },
             ]}
         >
-            <Text style={styles.icon}>{style.icon}</Text>
-            <Text style={[styles.text, { color: style.color }]}>
+            <Text style={componentStyles.icon}>{style.icon}</Text>
+            <Text style={[componentStyles.text, { color: style.color }]}>
                 {isBroken ? t('streak.broken') : t('streak.days', { count: streak })}
             </Text>
         </Animated.View>
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, layout: any) => StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: spacing.s,
         paddingVertical: spacing.xs,
-        borderRadius: 12,
+        borderRadius: layout.borderRadius.m,
         gap: 4,
     },
     icon: {

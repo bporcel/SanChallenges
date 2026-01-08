@@ -15,6 +15,7 @@
 - Retos privados (solo creador puede marcar)
 - Sistema de Aura global (reputación visual basada en consistencia)
 - Configuración de duración del reto (en días)
+- Estadísticas personales anuales (retos, checks, aura)
 
 ## Requisitos no funcionales
 - Sin login

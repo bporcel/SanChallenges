@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ProgressBar } from './ProgressBar';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 import { t } from '../../i18n/i18n';
@@ -12,6 +12,7 @@ interface GoalProgressProps {
 }
 
 export const GoalProgress: React.FC<GoalProgressProps> = ({ currentDay, totalDays }) => {
+    const colors = useColors();
     const progress = Math.min(currentDay / totalDays, 1);
 
     // Color coding based on progress
@@ -20,6 +21,8 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({ currentDay, totalDay
         if (progress >= 0.5) return colors.status.warning;
         return colors.status.error;
     };
+
+    const styles = getStyles(colors);
 
     return (
         <View style={styles.container}>
@@ -32,7 +35,7 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({ currentDay, totalDay
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
     container: {
         marginTop: spacing.xs,
     },

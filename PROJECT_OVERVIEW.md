@@ -19,6 +19,7 @@ Permitir que varios usuarios compartan y sigan retos comunes desde distintas ins
 - Identidad automática estilo anime (Shadow Hokage, etc.)
 - Localización completa (EN/ES) con detección automática
 - Tendencia de ranking robusta (subidas/bajadas calculadas en servidor)
+- Estadísticas personales anuales (reflejaón y motivación)
 
 ## Qué no hace
 - Login o autenticación formal

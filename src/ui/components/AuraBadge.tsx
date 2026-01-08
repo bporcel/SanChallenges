@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
-import { colors } from '../theme/colors';
-import { spacing, layout } from '../theme/spacing';
+import { useColors } from '../theme/colors';
+import { useLayout, spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { AuraState } from '../../domain/models/AuraState';
 import { AuraService } from '../../domain/services/AuraService';
@@ -14,6 +14,8 @@ interface AuraBadgeProps {
 }
 
 export const AuraBadge: React.FC<AuraBadgeProps> = ({ value, label, auraState = 'inactive' }) => {
+    const colors = useColors();
+    const layout = useLayout();
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const glowAnim = useRef(new Animated.Value(0.4)).current;
 
@@ -51,6 +53,8 @@ export const AuraBadge: React.FC<AuraBadgeProps> = ({ value, label, auraState = 
             ])
         ).start();
     }, [pulseAnim, glowAnim]);
+
+    const styles = getStyles(colors, layout);
 
     return (
         <View style={styles.container}>
@@ -100,7 +104,7 @@ export const AuraBadge: React.FC<AuraBadgeProps> = ({ value, label, auraState = 
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, layout: any) => StyleSheet.create({
     container: {
         alignItems: 'center',
         justifyContent: 'center',

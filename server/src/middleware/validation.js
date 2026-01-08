@@ -6,7 +6,7 @@ const schemas = {
         title: z.string().min(1).max(100),
         description: z.string().max(500).optional(),
         points: z.number().int().min(0).max(1000).optional(),
-        duration: z.number().int().min(1).max(365).optional(),
+        duration: z.number().int().min(7).max(365).optional(),
         userId: z.string().uuid(),
         isPrivate: z.boolean().optional(),
         isLongTerm: z.boolean().optional(),

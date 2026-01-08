@@ -25,6 +25,7 @@
 - [x] Error Boundary global (Client)
 - [x] Optimización N+1 (Bulk endpoints & Social Context)
 - [x] Sincronización de borrado fiable (Ghost participants fix)\n- [x] Retos de largo plazo (goal-based challenges)\n- [x] Nudges diarios opcionales (engagement sin penalizaciones)
+- [x] Estadísticas personales anuales (reflexión y motivación)
 
 ## Mejoras futuras
 

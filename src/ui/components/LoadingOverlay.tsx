@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Modal } from 'react-native';
-import { colors } from '../theme/colors';
-import { spacing, layout } from '../theme/spacing';
+import { useColors } from '../theme/colors';
+import { spacing, useLayout } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { t } from '../../i18n/i18n';
 
@@ -14,6 +14,10 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
     visible,
     message = t('common.loadingMessage')
 }) => {
+    const colors = useColors();
+    const layout = useLayout();
+    const styles = getStyles(colors, layout);
+
     return (
         <Modal
             transparent
@@ -30,7 +34,7 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, layout: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',

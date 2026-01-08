@@ -19,6 +19,7 @@ export const es = {
         createNew: 'Crear nuevo reto',
         joinChallenge: 'Unirse a un reto',
         viewRanking: 'Ver clasificación',
+        viewStats: '📊 Tus Estadísticas',
         streak: '🔥 racha de {{count}} días',
         noStreak: '❄️ Sin racha',
         code: 'Código: {{code}}',
@@ -59,6 +60,10 @@ export const es = {
         typeLongTerm: 'Objetivo de largo plazo',
         typeDailyDesc: 'Marca a diario para crear racha',
         typeLongTermDesc: 'Complétalo una vez cuando logres el objetivo',
+        errorDurationMin: 'La duración debe ser de al menos 7 días',
+        errorDurationMax: 'La duración no puede exceder los 365 días',
+        quickMin: '7 días',
+        quickMax: '1 año',
     },
     join: {
         title: 'Unirse a un reto',
@@ -105,6 +110,31 @@ export const es = {
         stable: 'Estable',
         strong: 'Fuerte',
         legendary: 'Legendario',
+    },
+    stats: {
+        title: 'Tus Estadísticas',
+        subtitle: 'Resumen del {{year}}',
+        empty: '¡Empieza un reto para ver tus estadísticas!',
+        challenges: {
+            title: 'Retos',
+            participated: 'Participados',
+            completed: 'Completados',
+            abandoned: 'Abandonados',
+        },
+        consistency: {
+            title: 'Constancia',
+            totalChecks: 'Total de Checks',
+            avgPerWeek: 'Media / Semana',
+            bestStreak: 'Mejor Racha',
+            missedDays: 'Días Fallidos',
+            bestMonth: '✨ Tu mejor mes fue {{month}}',
+        },
+        aura: {
+            title: 'Tu Viaje Aura',
+            mostCommon: 'Tu estado de aura más común',
+            longestStrong: 'Días en Fuerte+',
+            breaks: 'Rachas Rotas',
+        },
     },
     debug: {
         button: 'DEBUG',
@@ -168,5 +198,12 @@ export const es = {
             retry: 'Reintentar',
             clearData: 'Limpiar todos los datos',
         },
+    },
+    theme: {
+        title: 'Seleccionar Tema',
+        default: 'Oscuro por Defecto',
+        defaultDesc: 'Modo oscuro elegante con tonos índigo y pizarra',
+        minimalist: 'Minimalista',
+        minimalistDesc: 'Modo claro limpio con toques de salvia',
     },
 };

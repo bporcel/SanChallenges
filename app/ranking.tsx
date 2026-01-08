@@ -12,8 +12,8 @@ import { UserRepository } from '../src/data/repositories/UserRepository';
 import { User } from '../src/domain/models/User';
 import { Card } from '../src/ui/components/Card';
 import { RankingChangeIndicator } from '../src/ui/components/RankingChangeIndicator';
-import { colors } from '../src/ui/theme/colors';
-import { spacing, layout } from '../src/ui/theme/spacing';
+import { useColors } from '../src/ui/theme/colors';
+import { spacing, useLayout } from '../src/ui/theme/spacing';
 import { typography } from '../src/ui/theme/typography';
 import { GamificationService } from '../src/domain/services/GamificationService';
 import { LoadingOverlay } from '../src/ui/components/LoadingOverlay';
@@ -22,8 +22,6 @@ import { SocialDataProvider, useSocialData } from '../src/ui/components/SocialDa
 import { AuraIndicator } from '../src/ui/components/AuraIndicator';
 import { AuraService } from '../src/domain/services/AuraService';
 import { t } from '../src/i18n/i18n';
-
-
 
 interface UserRanking {
     userId: string;
@@ -42,6 +40,9 @@ interface RankChange {
 }
 
 export default function RankingScreen() {
+    const colors = useColors();
+    const layout = useLayout();
+    const styles = getStyles(colors, layout);
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [challenges, setChallenges] = useState<Challenge[]>([]);
@@ -309,7 +310,7 @@ export default function RankingScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, layout: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

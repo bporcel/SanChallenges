@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { AuraState } from '../../domain/models/AuraState';
 import { AuraService } from '../../domain/services/AuraService';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 
 interface AuraIndicatorProps {
@@ -16,6 +16,7 @@ export const AuraIndicator: React.FC<AuraIndicatorProps> = ({
     size = 'small',
     showLabel = false
 }) => {
+    const colors = useColors();
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const glowAnim = useRef(new Animated.Value(0)).current;
 
@@ -76,6 +77,8 @@ export const AuraIndicator: React.FC<AuraIndicatorProps> = ({
         outputRange: [colors.aura.legendary, colors.aura.legendaryGlow]
     });
 
+    const styles = getStyles(colors);
+
     return (
         <View style={styles.container}>
             {glowIntensity > 0 && (
@@ -126,7 +129,7 @@ export const AuraIndicator: React.FC<AuraIndicatorProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
     container: {
         alignItems: 'center',
         justifyContent: 'center',

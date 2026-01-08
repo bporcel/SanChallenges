@@ -19,17 +19,19 @@ import { GoalProgress } from '../src/ui/components/GoalProgress';
 import { SocialContext } from '../src/ui/components/SocialContext';
 import { CheckCelebration } from '../src/ui/components/CheckCelebration';
 import { AuraBadge } from '../src/ui/components/AuraBadge';
+import { ThemeSelectorModal } from '../src/ui/components/ThemeSelectorModal';
 import { SocialDataProvider, useSocialData } from '../src/ui/components/SocialDataContext';
-import { colors } from '../src/ui/theme/colors';
-import { spacing, layout } from '../src/ui/theme/spacing';
+import { useColors } from '../src/ui/theme/colors';
+import { spacing, useLayout } from '../src/ui/theme/spacing';
 import { typography } from '../src/ui/theme/typography';
 import { GamificationService, AURA_REWARDS } from '../src/domain/services/GamificationService';
 import { AuraService } from '../src/domain/services/AuraService';
 import { t } from '../src/i18n/i18n';
 
-
-
 export default function HomeScreen() {
+    const colors = useColors();
+    const layout = useLayout();
+    const styles = getStyles(colors, layout);
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [challenges, setChallenges] = useState<Challenge[]>([]);
@@ -40,6 +42,7 @@ export default function HomeScreen() {
     const [isEditNameVisible, setIsEditNameVisible] = useState(false);
     const [celebratingCheckId, setCelebratingCheckId] = useState<string | null>(null);
     const [participantCounts, setParticipantCounts] = useState<Record<string, number>>({});
+    const [isThemeModalVisible, setIsThemeModalVisible] = useState(false);
     const { loadCheckInsForChallenges } = useSocialData();
 
     const loadData = useCallback(async () => {
@@ -369,13 +372,29 @@ export default function HomeScreen() {
                             <Text style={styles.userName}>{user.displayName}</Text>
                             <Ionicons name="pencil-outline" size={14} color={colors.primary} style={styles.editIcon} />
                         </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => setIsThemeModalVisible(true)}
+                            activeOpacity={0.7}
+                            style={styles.themeHeaderButton}
+                        >
+                            <Ionicons name="color-palette-outline" size={18} color={colors.primary} />
+                        </TouchableOpacity>
                     </View>
                     <View style={styles.headerRight}>
-                        <AuraBadge
-                            value={totalAura}
-                            label={t('common.pts')}
-                            auraState={user.auraState || AuraService.getAuraState(user.currentStreak || 0)}
-                        />
+                        <TouchableOpacity
+                            onPress={() => router.push('/stats')}
+                            activeOpacity={0.7}
+                            style={styles.statsHeaderButton}
+                        >
+                            <View style={styles.statsIconContainer}>
+                                <Ionicons name="stats-chart" size={16} color={colors.primaryLight} />
+                            </View>
+                            <AuraBadge
+                                value={totalAura}
+                                label={t('common.pts')}
+                                auraState={user.auraState || AuraService.getAuraState(user.currentStreak || 0)}
+                            />
+                        </TouchableOpacity>
                     </View>
                 </View>
             )}
@@ -421,12 +440,17 @@ export default function HomeScreen() {
                     onCancel={() => setIsEditNameVisible(false)}
                 />
             )}
+
+            <ThemeSelectorModal
+                visible={isThemeModalVisible}
+                onClose={() => setIsThemeModalVisible(false)}
+            />
         </SafeAreaView>
     );
 }
 
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, layout: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
@@ -463,10 +487,40 @@ const styles = StyleSheet.create({
     },
     headerLeft: {
         flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     headerRight: {
         alignItems: 'flex-end',
         justifyContent: 'center',
+    },
+    statsHeaderButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.s,
+    },
+    themeHeaderButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: spacing.s,
+        ...layout.shadows.small,
+    },
+    statsIconContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...layout.shadows.small,
     },
     list: {
         padding: spacing.m,

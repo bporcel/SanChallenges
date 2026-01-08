@@ -1,3 +1,5 @@
+import { useTheme } from './ThemeContext';
+
 export const spacing = {
     xs: 4,
     s: 8,
@@ -7,7 +9,7 @@ export const spacing = {
     xxl: 48,
 };
 
-export const layout = {
+export const baseLayout = {
     borderRadius: {
         s: 4,
         m: 8,
@@ -31,4 +33,30 @@ export const layout = {
             elevation: 4,
         },
     }
+};
+
+export const layout = baseLayout;
+
+export const useLayout = () => {
+    const { theme } = useTheme();
+
+    let currentLayout = baseLayout;
+
+    if (theme === 'minimalist') {
+        currentLayout = {
+            ...baseLayout,
+            borderRadius: {
+                s: 8,
+                m: 16,
+                l: 24,
+                xl: 32,
+                round: 9999,
+            },
+        };
+    }
+
+    return {
+        ...currentLayout,
+        theme,
+    };
 };

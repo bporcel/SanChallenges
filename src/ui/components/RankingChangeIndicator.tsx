@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 
@@ -13,6 +13,7 @@ export const RankingChangeIndicator: React.FC<RankingChangeIndicatorProps> = ({
     previousRank,
     currentRank,
 }) => {
+    const colors = useColors();
     // If no previous rank is provided, we can't show a tendency, but we should show something
     // to be "robust". Let's default to neutral if missing.
     const prev = previousRank ?? currentRank;
