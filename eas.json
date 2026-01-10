@@ -12,7 +12,8 @@
         },
         "production": {
             "android": {
-                "buildType": "apk"
+                "buildType": "app-bundle",
+                "autoIncrement": true
             },
             "env": {
                 "EXPO_PUBLIC_API_URL": "https://sanchallenges.onrender.com"
