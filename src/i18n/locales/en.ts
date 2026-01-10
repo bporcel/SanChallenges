@@ -11,6 +11,7 @@ export const en = {
         undo: 'Undo',
         check: 'Check',
         day: 'Day {{current}} / {{total}}',
+        copied: 'Copied!',
     },
     home: {
         greeting: 'Hello, ',

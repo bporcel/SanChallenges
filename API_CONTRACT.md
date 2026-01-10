@@ -12,6 +12,7 @@
 - `POST /users` - Update user profile (displayName)
 - `POST /checks` - Sync daily check (or nudge for long-term challenges)
 - `POST /checks/today/bulk` - Get today's checks for multiple challenges (bulk)
+- `GET /users/{userId}/checks` - Get all checks for a user (for client sync on reinstall)
 - `GET /health` - Server health check
 
 ## Notas

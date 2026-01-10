@@ -67,4 +67,29 @@ router.get('/:userId/challenges', async (req, res) => {
     }
 });
 
+// GET /users/:userId/checks - Get all checks for a user (for client sync)
+router.get('/:userId/checks', async (req, res) => {
+    const { userId } = req.params;
+    logger.info({ userId }, 'Fetching all checks for user');
+
+    try {
+        const checks = await prisma.check.findMany({
+            where: { userId },
+            select: {
+                id: true,
+                challengeId: true,
+                date: true,
+                completed: true
+            },
+            orderBy: { date: 'desc' }
+        });
+
+        logger.info({ userId, count: checks.length }, 'User checks fetched');
+        res.json(checks);
+    } catch (e) {
+        logger.error({ error: e.message, userId }, 'Failed to fetch user checks');
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;

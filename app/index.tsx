@@ -5,6 +5,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
 import { ChallengeRepository } from '../src/data/repositories/ChallengeRepository';
 import { CheckRepository } from '../src/data/repositories/CheckRepository';
 import { Challenge } from '../src/domain/models/Challenge';
@@ -43,6 +44,7 @@ export default function HomeScreen() {
     const [celebratingCheckId, setCelebratingCheckId] = useState<string | null>(null);
     const [participantCounts, setParticipantCounts] = useState<Record<string, number>>({});
     const [isThemeModalVisible, setIsThemeModalVisible] = useState(false);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
     const { loadCheckInsForChallenges } = useSocialData();
 
     const loadData = useCallback(async () => {
@@ -50,15 +52,16 @@ export default function HomeScreen() {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setChallenges(allChallenges);
 
-        const currentUser = await UserRepository.getUser();
+        // Sync user data from server to get fresh aura/streak data
+        const currentUser = await UserRepository.sync();
         setUser(currentUser);
 
         const today = dateService.getToday();
         const checks: Record<string, boolean> = {};
         const currentStreaks: Record<string, number> = {};
 
-        // Optimization: Fetch all checks once
-        const allChecks = await CheckRepository.getAll();
+        // Sync checks from server to ensure persistence across reinstalls
+        const allChecks = await CheckRepository.sync();
 
         for (const challenge of allChallenges) {
             const challengeChecks = allChecks.filter(c => c.challengeId === challenge.id);
@@ -227,6 +230,17 @@ export default function HomeScreen() {
         }
     };
 
+    const handleCopyCode = async (code: string, challengeId: string) => {
+        await Clipboard.setStringAsync(code);
+        setCopiedId(challengeId);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        // Reset "Copied" message after 2 seconds
+        setTimeout(() => {
+            setCopiedId(null);
+        }, 2000);
+    };
+
     const renderItem = ({ item }: { item: Challenge }) => {
         const isOwner = user?.id === item.creatorId;
         const isPrivateChallenge = item.isPrivate === true;
@@ -304,7 +318,24 @@ export default function HomeScreen() {
 
                 <View style={styles.cardStats}>
                     {!isLongTerm && <StreakBadge streak={streaks[item.id] || 0} />}
-                    <Text style={styles.inviteCodeSubtle}>{t('home.code', { code: item.inviteCode })}</Text>
+                    <TouchableOpacity
+                        onPress={() => handleCopyCode(item.inviteCode, item.id)}
+                        activeOpacity={0.6}
+                        style={styles.copyContainer}
+                    >
+                        <Ionicons
+                            name={copiedId === item.id ? "checkmark-circle" : "copy-outline"}
+                            size={12}
+                            color={copiedId === item.id ? colors.status.success : colors.text.tertiary}
+                            style={{ marginRight: 4 }}
+                        />
+                        <Text style={[
+                            styles.inviteCodeSubtle,
+                            copiedId === item.id && { color: colors.status.success, fontWeight: 'bold' }
+                        ]}>
+                            {copiedId === item.id ? t('common.copied') : t('home.code', { code: item.inviteCode })}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
 
                 {isPrivateChallenge && !isOwner && (
@@ -697,6 +728,13 @@ const getStyles = (colors: any, layout: any) => StyleSheet.create({
     },
     nudgeButton: {
         paddingHorizontal: spacing.s,
+    },
+    copyContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 2,
+        paddingHorizontal: 4,
+        borderRadius: 4,
     },
 });
 

@@ -27,8 +27,9 @@ export default function StatsScreen() {
     const loadData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const challenges = await ChallengeRepository.getAll();
-            const checks = await CheckRepository.getAll();
+            // Sync from server to ensure data persistence across reinstalls
+            const challenges = await ChallengeRepository.sync();
+            const checks = await CheckRepository.sync();
             const currentYear = new Date().getFullYear();
             const yearlyStats = StatisticsService.calculateYearlyStats(challenges, checks, currentYear);
             setStats(yearlyStats);

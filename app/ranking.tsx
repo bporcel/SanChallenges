@@ -55,10 +55,12 @@ export default function RankingScreen() {
     const loadData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const user = await UserRepository.getUser();
+            // Sync user data from server to get fresh aura/streak data
+            const user = await UserRepository.sync();
             setCurrentUser(user);
 
-            const allChallenges = await ChallengeRepository.getAll();
+            // Sync challenges from server
+            const allChallenges = await ChallengeRepository.sync();
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setChallenges(allChallenges);
 

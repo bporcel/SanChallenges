@@ -102,5 +102,32 @@ export const CheckRepository = {
             console.error('Error fetching bulk today check-ins', e);
             return {};
         }
+    },
+
+    /**
+     * Sync checks from server - fetches all user's checks and updates local storage.
+     * This is critical for data persistence across app reinstalls/updates.
+     */
+    async sync(): Promise<Check[]> {
+        try {
+            const userId = await UserRepository.getUserId();
+            const response = await fetch(`${Config.API_URL}/users/${userId}/checks`);
+
+            if (!response.ok) {
+                console.error('Failed to sync checks from server');
+                return this.getAll();
+            }
+
+            const serverChecks: Check[] = await response.json();
+
+            // Update local storage with server data
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(serverChecks));
+
+            return serverChecks;
+        } catch (e) {
+            console.error('Error syncing checks', e);
+            // Return local data if sync fails
+            return this.getAll();
+        }
     }
 };

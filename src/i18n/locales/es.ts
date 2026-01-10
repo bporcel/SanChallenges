@@ -11,6 +11,7 @@ export const es = {
         undo: 'Deshacer',
         check: 'Hecho',
         day: 'Día {{current}} / {{total}}',
+        copied: '¡Copiado!',
     },
     home: {
         greeting: 'Hola, ',
